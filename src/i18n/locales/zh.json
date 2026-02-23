@@ -1,0 +1,115 @@
+{
+  "app": {
+    "name": "EasyCV",
+    "version": "版本 {{version}}",
+    "description": "免费开源的跨平台剪贴板历史管理器"
+  },
+  "tabs": {
+    "history": "历史",
+    "pins": "收藏"
+  },
+  "filter": {
+    "all": "全部",
+    "text": "文本",
+    "rich": "富文本",
+    "image": "图片",
+    "file": "文件"
+  },
+  "search": {
+    "placeholder": "搜索剪贴板历史..."
+  },
+  "list": {
+    "loading": "加载中...",
+    "empty": "暂无剪贴板历史",
+    "emptyHint": "复制内容即可开始使用"
+  },
+  "context": {
+    "paste": "粘贴",
+    "pasteAsPlainText": "粘贴为纯文本",
+    "copyToClipboard": "复制到剪贴板",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏",
+    "delete": "删除"
+  },
+  "card": {
+    "text": "文本",
+    "richText": "富文本",
+    "image": "图片",
+    "file": "文件",
+    "unknownFile": "未知文件",
+    "unknown": "未知",
+    "clipboardImage": "剪贴板图片"
+  },
+  "settings": {
+    "title": "设置",
+    "loading": "正在加载设置...",
+    "tabs": {
+      "general": "通用",
+      "history": "历史",
+      "privacy": "隐私",
+      "about": "关于"
+    },
+    "general": {
+      "title": "通用",
+      "theme": "外观",
+      "themeDesc": "选择您偏好的外观风格",
+      "dark": "深色",
+      "light": "浅色",
+      "system": "跟随系统",
+      "shortcut": "全局快捷键",
+      "shortcutDesc": "显示/隐藏 EasyCV 的快捷键",
+      "autoStart": "开机自启动",
+      "autoStartDesc": "登录时自动启动 EasyCV",
+      "language": "语言",
+      "languageDesc": "选择显示语言",
+      "closeOnBlur": "失焦隐藏",
+      "closeOnBlurDesc": "窗口失去焦点时自动隐藏",
+      "pressKeys": "按下快捷键..."
+    },
+    "history": {
+      "title": "历史",
+      "retention": "保留策略",
+      "retentionDesc": "剪贴板历史的保留时间",
+      "unlimited": "无限制",
+      "keepDays": "保留 N 天",
+      "keepCount": "保留 N 条",
+      "retentionDays": "保留天数",
+      "retentionDaysDesc": "历史保留的天数",
+      "maxItems": "最大条数",
+      "maxItemsDesc": "最多保留的条目数量",
+      "maxSize": "单条大小上限",
+      "maxSizeDesc": "每条剪贴板内容的最大大小 (MB)",
+      "clear": "清空历史",
+      "clearDesc": "删除所有非收藏的条目",
+      "confirmClear": "确认清空",
+      "cleared": "已清空 {{count}} 条",
+      "clearAll": "清空全部"
+    },
+    "privacy": {
+      "title": "隐私",
+      "accessibility": "辅助功能权限 (macOS)",
+      "accessibilityDesc": "EasyCV 需要辅助功能权限来模拟粘贴 (Cmd+V)。如果没有此权限，内容会被复制到剪贴板但不会自动粘贴。",
+      "accessibilityPath": "系统设置 → 隐私与安全 → 辅助功能 → 启用 EasyCV",
+      "exclusionList": "应用排除列表",
+      "exclusionListDesc": "这些应用的剪贴板内容将不会被记录（即将推出）",
+      "comingSoon": "即将推出"
+    },
+    "about": {
+      "title": "关于",
+      "license": "许可证",
+      "framework": "框架",
+      "frontend": "前端",
+      "database": "数据库"
+    }
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "today": "今天",
+    "yesterday": "昨天",
+    "daysAgoGroup": "{{count}}天前",
+    "older": "更早"
+  }
+}

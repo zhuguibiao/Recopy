@@ -1,25 +1,352 @@
+mod clipboard;
+mod commands;
 mod db;
+
+use commands::clipboard as clip_cmd;
+use db::models::ContentType;
+use tauri::{
+    Emitter, Listener, Manager,
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::TrayIconBuilder,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_x::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
+        .invoke_handler(tauri::generate_handler![
+            clip_cmd::get_clipboard_items,
+            clip_cmd::search_clipboard_items,
+            clip_cmd::delete_clipboard_item,
+            clip_cmd::paste_clipboard_item,
+            clip_cmd::paste_as_plain_text,
+            clip_cmd::toggle_favorite,
+            clip_cmd::get_favorited_items,
+            clip_cmd::get_settings,
+            clip_cmd::get_setting,
+            clip_cmd::set_setting,
+            clip_cmd::clear_history,
+            clip_cmd::run_retention_cleanup,
+            clip_cmd::open_settings_window,
+        ])
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
-
             // Initialize database
             let app_handle = app.handle().clone();
             tauri::async_runtime::block_on(async {
-                db::init(&app_handle).await.expect("Failed to initialize database");
+                db::init(&app_handle)
+                    .await
+                    .expect("Failed to initialize database");
             });
+
+            // Setup system tray
+            setup_tray(app)?;
+
+            // Register global shortcut
+            setup_global_shortcut(app.handle())?;
+
+            // Setup focus-loss hiding for main window
+            setup_blur_hide(app.handle());
+
+            // Start clipboard monitoring
+            let app_handle = app.handle().clone();
+            start_clipboard_monitor(app_handle);
 
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Show the main window: full-width at bottom of screen, animate in.
+fn show_main_window(app: &tauri::AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+
+    // Position at bottom of primary monitor, spanning full width
+    if let Ok(Some(monitor)) = window.current_monitor() {
+        let monitor_size = monitor.size();
+        let monitor_pos = monitor.position();
+        let scale = monitor.scale_factor();
+
+        let screen_w = monitor_size.width as f64 / scale;
+        let screen_h = monitor_size.height as f64 / scale;
+
+        let margin_x = 6.0_f64;
+        let margin_bottom = 6.0_f64;
+        let win_width = screen_w - margin_x * 2.0;
+        let win_height = 380.0_f64;
+
+        let x = monitor_pos.x as f64 / scale + margin_x;
+        let y = monitor_pos.y as f64 / scale + screen_h - win_height - margin_bottom;
+
+        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
+            win_width, win_height,
+        )));
+        let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
+            x, y,
+        )));
+    }
+
+    let _ = window.show();
+    let _ = window.set_focus();
+    let _ = app.emit("easycv-show", ());
+}
+
+/// Hide the main window.
+fn hide_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+}
+
+fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let show = MenuItemBuilder::with_id("show", "Show EasyCV").build(app)?;
+    let settings = MenuItemBuilder::with_id("settings", "Settings...").build(app)?;
+    let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+
+    let menu = MenuBuilder::new(app)
+        .item(&show)
+        .separator()
+        .item(&settings)
+        .separator()
+        .item(&quit)
+        .build()?;
+
+    let _tray = TrayIconBuilder::new()
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => {
+                show_main_window(app);
+            }
+            "settings" => {
+                open_settings_window(app);
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click {
+                button: tauri::tray::MouseButton::Left,
+                ..
+            } = event
+            {
+                show_main_window(tray.app_handle());
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+fn open_settings_window(app: &tauri::AppHandle) {
+    // If settings window already exists, just show it
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.show();
+        let _ = window.set_focus();
+        return;
+    }
+
+    // Create new settings window
+    let url = tauri::WebviewUrl::App("index.html?page=settings".into());
+    match tauri::WebviewWindowBuilder::new(app, "settings", url)
+        .title("EasyCV Settings")
+        .inner_size(560.0, 480.0)
+        .resizable(false)
+        .center()
+        .build()
+    {
+        Ok(_) => log::info!("Settings window opened"),
+        Err(e) => log::error!("Failed to open settings window: {}", e),
+    }
+}
+
+fn setup_global_shortcut(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    let app_handle = app.clone();
+    app.global_shortcut().on_shortcut(
+        "CommandOrControl+Shift+V",
+        move |_app, _shortcut, event| {
+            if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        hide_main_window(&app_handle);
+                    } else {
+                        show_main_window(&app_handle);
+                    }
+                }
+            }
+        },
+    )?;
+
+    log::info!("Global shortcut registered: CommandOrControl+Shift+V");
+    Ok(())
+}
+
+fn setup_blur_hide(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let w = window.clone();
+        window.on_window_event(move |event| {
+            if let tauri::WindowEvent::Focused(false) = event {
+                let app_handle = w.app_handle();
+                let should_hide = tauri::async_runtime::block_on(async {
+                    if let Some(pool) = app_handle.try_state::<db::DbPool>() {
+                        db::queries::get_setting(&pool.0, "close_on_blur")
+                            .await
+                            .unwrap_or(None)
+                            .unwrap_or_else(|| "true".to_string())
+                    } else {
+                        "true".to_string()
+                    }
+                });
+                if should_hide == "true" {
+                    let _ = w.hide();
+                }
+            }
+        });
+    }
+}
+
+fn start_clipboard_monitor(app: tauri::AppHandle) {
+    let app_clone = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        // Start the clipboard watcher via the plugin's command
+        if let Err(e) = tauri_plugin_clipboard_x::start_listening(app_clone.clone()).await {
+            log::error!("Failed to start clipboard listener: {}", e);
+            return;
+        }
+        log::info!("Clipboard monitor started");
+
+        // Listen for clipboard change events
+        let app_for_listener = app_clone.clone();
+        app_clone.listen(
+            "plugin:clipboard-x://clipboard_changed",
+            move |_event: tauri::Event| {
+                let app_inner = app_for_listener.clone();
+                tauri::async_runtime::spawn(async move {
+                    handle_clipboard_event(&app_inner).await;
+                });
+            },
+        );
+    });
+}
+
+async fn handle_clipboard_event(app: &tauri::AppHandle) {
+    // Determine content type and read clipboard
+    let (content_type, content, plain_text, rich_content, file_path, file_name) =
+        match extract_clipboard_content(app).await {
+            Some(data) => data,
+            None => return,
+        };
+
+    log::info!("Clipboard changed: type={}", content_type.as_str());
+
+    // Process and store
+    let result = clip_cmd::process_clipboard_change(
+        app,
+        content_type,
+        content,
+        plain_text,
+        rich_content,
+        file_path,
+        file_name,
+        String::new(), // source_app - TODO: M1-8
+        String::new(), // source_app_name - TODO: M1-8
+    )
+    .await;
+
+    match result {
+        Ok(Some(id)) => {
+            let _ = app.emit("clipboard-changed", serde_json::json!({ "id": id }));
+        }
+        Ok(None) => {}
+        Err(e) => log::error!("Failed to process clipboard: {}", e),
+    }
+}
+
+async fn extract_clipboard_content(
+    app: &tauri::AppHandle,
+) -> Option<(
+    ContentType,
+    Vec<u8>,
+    Option<String>,
+    Option<Vec<u8>>,
+    Option<String>,
+    Option<String>,
+)> {
+    // Try files first
+    if let Ok(true) = tauri_plugin_clipboard_x::has_files().await {
+        if let Ok(file_result) = tauri_plugin_clipboard_x::read_files().await {
+            if let Some(first) = file_result.paths.first() {
+                let file_name = std::path::Path::new(first)
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string());
+                let content = first.as_bytes().to_vec();
+                return Some((
+                    ContentType::File,
+                    content,
+                    Some(first.clone()),
+                    None,
+                    Some(first.clone()),
+                    file_name,
+                ));
+            }
+        }
+    }
+
+    // Try image
+    if let Ok(true) = tauri_plugin_clipboard_x::has_image().await {
+        if let Ok(img_result) = tauri_plugin_clipboard_x::read_image(app.clone(), None).await {
+            // Read the saved image file
+            if let Ok(img_data) = std::fs::read(&img_result.path) {
+                return Some((ContentType::Image, img_data, None, None, None, None));
+            }
+        }
+    }
+
+    // Try HTML (rich text)
+    if let Ok(true) = tauri_plugin_clipboard_x::has_html().await {
+        if let Ok(html) = tauri_plugin_clipboard_x::read_html().await {
+            let plain = tauri_plugin_clipboard_x::read_text().await.unwrap_or_default();
+            let html_bytes = html.as_bytes().to_vec();
+            let content_bytes = plain.as_bytes().to_vec();
+            return Some((
+                ContentType::RichText,
+                content_bytes,
+                Some(plain),
+                Some(html_bytes),
+                None,
+                None,
+            ));
+        }
+    }
+
+    // Try plain text
+    if let Ok(true) = tauri_plugin_clipboard_x::has_text().await {
+        if let Ok(text) = tauri_plugin_clipboard_x::read_text().await {
+            if !text.is_empty() {
+                let content = text.as_bytes().to_vec();
+                return Some((ContentType::PlainText, content, Some(text), None, None, None));
+            }
+        }
+    }
+
+    None
 }

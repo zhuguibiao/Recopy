@@ -1,0 +1,115 @@
+{
+  "app": {
+    "name": "EasyCV",
+    "version": "Version {{version}}",
+    "description": "A free, open-source clipboard history manager"
+  },
+  "tabs": {
+    "history": "History",
+    "pins": "Pins"
+  },
+  "filter": {
+    "all": "All",
+    "text": "Text",
+    "rich": "Rich",
+    "image": "Image",
+    "file": "File"
+  },
+  "search": {
+    "placeholder": "Search clipboard history..."
+  },
+  "list": {
+    "loading": "Loading...",
+    "empty": "No clipboard history yet",
+    "emptyHint": "Copy something to get started"
+  },
+  "context": {
+    "paste": "Paste",
+    "pasteAsPlainText": "Paste as Plain Text",
+    "copyToClipboard": "Copy to Clipboard",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "delete": "Delete"
+  },
+  "card": {
+    "text": "Text",
+    "richText": "Rich Text",
+    "image": "Image",
+    "file": "File",
+    "unknownFile": "Unknown file",
+    "unknown": "Unknown",
+    "clipboardImage": "Clipboard image"
+  },
+  "settings": {
+    "title": "Settings",
+    "loading": "Loading settings...",
+    "tabs": {
+      "general": "General",
+      "history": "History",
+      "privacy": "Privacy",
+      "about": "About"
+    },
+    "general": {
+      "title": "General",
+      "theme": "Theme",
+      "themeDesc": "Choose your preferred appearance",
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "shortcut": "Global Shortcut",
+      "shortcutDesc": "Keyboard shortcut to show/hide EasyCV",
+      "autoStart": "Start at Login",
+      "autoStartDesc": "Automatically start EasyCV when you log in",
+      "language": "Language",
+      "languageDesc": "Choose display language",
+      "closeOnBlur": "Hide on Focus Loss",
+      "closeOnBlurDesc": "Hide the window when it loses focus",
+      "pressKeys": "Press keys..."
+    },
+    "history": {
+      "title": "History",
+      "retention": "Retention Policy",
+      "retentionDesc": "How long to keep clipboard history",
+      "unlimited": "Unlimited",
+      "keepDays": "Keep for N days",
+      "keepCount": "Keep N items",
+      "retentionDays": "Retention Days",
+      "retentionDaysDesc": "Days to keep history",
+      "maxItems": "Max Items",
+      "maxItemsDesc": "Maximum number of items to keep",
+      "maxSize": "Max Item Size",
+      "maxSizeDesc": "Maximum size per clipboard entry (MB)",
+      "clear": "Clear History",
+      "clearDesc": "Delete all items except favorites",
+      "confirmClear": "Confirm Clear",
+      "cleared": "Cleared {{count}} items",
+      "clearAll": "Clear All"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "accessibility": "Accessibility Permission (macOS)",
+      "accessibilityDesc": "EasyCV needs Accessibility permission to simulate paste (Cmd+V) after selecting a clipboard item. Without this permission, items will be copied to clipboard but won't be auto-pasted.",
+      "accessibilityPath": "System Settings \u2192 Privacy & Security \u2192 Accessibility \u2192 Enable EasyCV",
+      "exclusionList": "App Exclusion List",
+      "exclusionListDesc": "Clipboard from these apps won't be recorded (Coming soon)",
+      "comingSoon": "Coming soon"
+    },
+    "about": {
+      "title": "About",
+      "license": "License",
+      "framework": "Framework",
+      "frontend": "Frontend",
+      "database": "Database"
+    }
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgoGroup": "{{count}} days ago",
+    "older": "Older"
+  }
+}
