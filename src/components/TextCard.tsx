@@ -9,8 +9,8 @@ interface TextCardProps {
   onClick: () => void;
 }
 
-const MAX_LINES = 4;
-const MAX_CHARS = 200;
+const MAX_LINES = 6;
+const MAX_CHARS = 300;
 
 export function TextCard({ item, selected, onClick }: TextCardProps) {
   const { t } = useTranslation();
@@ -36,7 +36,7 @@ export function TextCard({ item, selected, onClick }: TextCardProps) {
         <Type size={12} />
         <span className="text-xs">{t("card.text")}</span>
       </div>
-      <pre className="whitespace-pre-wrap break-words text-xs font-mono text-foreground leading-relaxed line-clamp-3 flex-1 min-h-0">
+      <pre className="whitespace-pre-wrap break-words text-xs font-mono text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
         {preview}
       </pre>
       <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">

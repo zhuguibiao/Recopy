@@ -12,8 +12,8 @@ interface RichTextCardProps {
 export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
   const { t } = useTranslation();
   const preview =
-    item.plain_text.length > 200
-      ? item.plain_text.slice(0, 200) + "..."
+    item.plain_text.length > 300
+      ? item.plain_text.slice(0, 300) + "..."
       : item.plain_text;
 
   return (
@@ -36,7 +36,7 @@ export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
         <FileText size={12} />
         <span className="text-xs">{t("card.richText")}</span>
       </div>
-      <div className="text-xs text-foreground leading-relaxed line-clamp-3 flex-1 min-h-0">
+      <div className="text-xs text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
         {preview}
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">

@@ -78,7 +78,7 @@ export function ClipboardList() {
               <div
                 key={item.id}
                 ref={flatIndex === selectedIndex ? selectedRef : undefined}
-                className="shrink-0 w-[300px] h-[200px]"
+                className="shrink-0 w-[300px] h-[260px]"
               >
                 <ClipboardCard
                   item={item}

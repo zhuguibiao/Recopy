@@ -68,11 +68,11 @@ pub async fn paste_clipboard_item(
     write_to_clipboard(&app, &content_type, &plain_text, &rich_content, &image_path, &file_path).await?;
 
     if auto_paste.unwrap_or(true) {
-        // Hide EasyCV window first so the previous app regains focus
-        if let Some(window) = app.get_webview_window("main") {
-            let _ = window.hide();
-        }
+        // Resign keyboard focus so the previous app receives the Cmd+V
+        crate::platform::platform_resign_before_paste(&app);
         simulate_paste();
+        // Now hide the panel
+        crate::platform::platform_hide_window(&app);
     }
 
     Ok(())
@@ -97,11 +97,11 @@ pub async fn paste_as_plain_text(
         .await
         .map_err(|e| format!("Failed to write text: {}", e))?;
 
-    // Hide EasyCV window first so the previous app regains focus
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
-    }
+    // Resign keyboard focus so the previous app receives the Cmd+V
+    crate::platform::platform_resign_before_paste(&app);
     simulate_paste();
+    // Now hide the panel
+    crate::platform::platform_hide_window(&app);
     Ok(())
 }
 

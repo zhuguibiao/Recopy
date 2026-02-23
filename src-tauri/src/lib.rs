@@ -1,6 +1,7 @@
 mod clipboard;
 mod commands;
 mod db;
+mod platform;
 
 use commands::clipboard as clip_cmd;
 use db::models::ContentType;
@@ -12,7 +13,7 @@ use tauri::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_x::init())
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -26,7 +27,12 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
-        }))
+        }));
+
+    // Register NSPanel plugin on macOS (no-op on other platforms)
+    let builder = platform::apply_plugin(builder);
+
+    builder
         .invoke_handler(tauri::generate_handler![
             clip_cmd::get_clipboard_items,
             clip_cmd::search_clipboard_items,
@@ -50,6 +56,9 @@ pub fn run() {
                     .await
                     .expect("Failed to initialize database");
             });
+
+            // Initialize platform (convert window to NSPanel on macOS)
+            platform::init_platform(app)?;
 
             // Setup system tray
             setup_tray(app)?;
@@ -101,16 +110,13 @@ fn show_main_window(app: &tauri::AppHandle) {
         )));
     }
 
-    let _ = window.show();
-    let _ = window.set_focus();
+    platform::platform_show_window(app);
     let _ = app.emit("easycv-show", ());
 }
 
 /// Hide the main window.
 fn hide_main_window(app: &tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
-    }
+    platform::platform_hide_window(app);
 }
 
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -184,12 +190,10 @@ fn setup_global_shortcut(app: &tauri::AppHandle) -> Result<(), Box<dyn std::erro
         "CommandOrControl+Shift+V",
         move |_app, _shortcut, event| {
             if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                if let Some(window) = app_handle.get_webview_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        hide_main_window(&app_handle);
-                    } else {
-                        show_main_window(&app_handle);
-                    }
+                if platform::platform_is_visible(&app_handle) {
+                    hide_main_window(&app_handle);
+                } else {
+                    show_main_window(&app_handle);
                 }
             }
         },
@@ -200,26 +204,53 @@ fn setup_global_shortcut(app: &tauri::AppHandle) -> Result<(), Box<dyn std::erro
 }
 
 fn setup_blur_hide(app: &tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let w = window.clone();
-        window.on_window_event(move |event| {
-            if let tauri::WindowEvent::Focused(false) = event {
-                let app_handle = w.app_handle();
-                let should_hide = tauri::async_runtime::block_on(async {
-                    if let Some(pool) = app_handle.try_state::<db::DbPool>() {
-                        db::queries::get_setting(&pool.0, "close_on_blur")
-                            .await
-                            .unwrap_or(None)
-                            .unwrap_or_else(|| "true".to_string())
-                    } else {
-                        "true".to_string()
-                    }
-                });
-                if should_hide == "true" {
-                    let _ = w.hide();
+    // On macOS with NSPanel, focus events come via tauri://blur emitted
+    // by the panel event handler (window_did_resign_key).
+    // On other platforms, use the standard WindowEvent::Focused(false).
+    #[cfg(target_os = "macos")]
+    {
+        let app_handle = app.clone();
+        app.listen("tauri://blur", move |_event| {
+            let app_handle = app_handle.clone();
+            let should_hide = tauri::async_runtime::block_on(async {
+                if let Some(pool) = app_handle.try_state::<db::DbPool>() {
+                    db::queries::get_setting(&pool.0, "close_on_blur")
+                        .await
+                        .unwrap_or(None)
+                        .unwrap_or_else(|| "true".to_string())
+                } else {
+                    "true".to_string()
                 }
+            });
+            if should_hide == "true" {
+                hide_main_window(&app_handle);
             }
         });
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        if let Some(window) = app.get_webview_window("main") {
+            let w = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::Focused(false) = event {
+                    let app_handle = w.app_handle();
+                    let should_hide = tauri::async_runtime::block_on(async {
+                        if let Some(pool) = app_handle.try_state::<db::DbPool>() {
+                            db::queries::get_setting(&pool.0, "close_on_blur")
+                                .await
+                                .unwrap_or(None)
+                                .unwrap_or_else(|| "true".to_string())
+                        } else {
+                            "true".to_string()
+                        }
+                    });
+                    if should_hide == "true" {
+                        let _ = w.hide();
+                    }
+                }
+            });
+        }
     }
 }
 
