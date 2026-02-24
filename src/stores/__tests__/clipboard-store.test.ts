@@ -121,17 +121,17 @@ describe("useClipboardStore", () => {
     expect(useClipboardStore.getState().selectedIndex).toBe(0);
   });
 
-  it("should reset to history and fetch items on panel show", async () => {
-    const historyItems = [mockItem({ id: "history-1" })];
-    mockedInvoke.mockResolvedValueOnce(historyItems);
+  it("should preserve view mode and refresh data on panel show", async () => {
+    // When in pins mode, onPanelShow should fetch favorites (not reset to history)
+    const pinItems = [mockItem({ id: "pin-1", is_favorited: true })];
+    mockedInvoke.mockResolvedValueOnce(pinItems);
     useClipboardStore.setState({ viewMode: "pins", selectedIndex: 5 });
 
     await useClipboardStore.getState().onPanelShow();
 
-    expect(useClipboardStore.getState().viewMode).toBe("history");
-    expect(useClipboardStore.getState().selectedIndex).toBe(0);
-    expect(useClipboardStore.getState().items).toEqual(historyItems);
-    expect(mockedInvoke).toHaveBeenCalledWith("get_clipboard_items", {
+    expect(useClipboardStore.getState().viewMode).toBe("pins");
+    expect(useClipboardStore.getState().items).toEqual(pinItems);
+    expect(mockedInvoke).toHaveBeenCalledWith("get_favorited_items", {
       contentType: undefined,
       limit: 200,
       offset: 0,

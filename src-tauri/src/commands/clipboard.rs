@@ -42,6 +42,17 @@ pub async fn search_clipboard_items(
         .map_err(|e| e.to_string())
 }
 
+/// Get the thumbnail for a single clipboard item (lazy loading).
+#[tauri::command]
+pub async fn get_thumbnail(
+    db: State<'_, DbPool>,
+    id: String,
+) -> Result<Option<Vec<u8>>, String> {
+    queries::get_thumbnail(&db.0, &id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Delete a clipboard item.
 #[tauri::command]
 pub async fn delete_clipboard_item(

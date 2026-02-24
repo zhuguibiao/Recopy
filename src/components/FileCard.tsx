@@ -1,15 +1,17 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ClipboardItem } from "../lib/types";
 import { relativeTime, formatSize } from "../lib/time";
 import { createPressActionHandlers } from "../lib/press-action";
 import { Star, File, FileArchive, FileImage, FileCode, FileText } from "lucide-react";
+import { useThumbnail } from "../hooks/useThumbnail";
 
 interface FileCardProps {
   item: ClipboardItem;
   selected: boolean;
   onClick: () => void;
 }
+
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "tiff", "tif"]);
 
 export function FileCard({ item, selected, onClick }: FileCardProps) {
   const { t } = useTranslation();
@@ -20,12 +22,9 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const IconComponent = getFileIcon(ext);
 
-  const thumbnailUrl = useMemo(() => {
-    if (!item.thumbnail || item.thumbnail.length === 0) return null;
-    const bytes = new Uint8Array(item.thumbnail);
-    const blob = new Blob([bytes], { type: "image/png" });
-    return URL.createObjectURL(blob);
-  }, [item.thumbnail]);
+  // Only fetch thumbnail for image files
+  const isImageFile = IMAGE_EXTS.has(ext);
+  const thumbnailUrl = useThumbnail(isImageFile ? item.id : null);
 
   return (
     <div

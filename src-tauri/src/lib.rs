@@ -36,6 +36,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             clip_cmd::get_clipboard_items,
             clip_cmd::search_clipboard_items,
+            clip_cmd::get_thumbnail,
             clip_cmd::delete_clipboard_item,
             clip_cmd::paste_clipboard_item,
             clip_cmd::paste_as_plain_text,

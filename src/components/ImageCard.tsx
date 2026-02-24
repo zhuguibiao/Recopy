@@ -1,9 +1,9 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ClipboardItem } from "../lib/types";
 import { relativeTime, formatSize } from "../lib/time";
 import { createPressActionHandlers } from "../lib/press-action";
 import { Star, ImageIcon } from "lucide-react";
+import { useThumbnail } from "../hooks/useThumbnail";
 
 interface ImageCardProps {
   item: ClipboardItem;
@@ -16,12 +16,7 @@ export function ImageCard({ item, selected, onClick }: ImageCardProps) {
   const pressHandlers = createPressActionHandlers<HTMLDivElement>(onClick, {
     enableKeyboardHandler: true,
   });
-  const thumbnailUrl = useMemo(() => {
-    if (!item.thumbnail || item.thumbnail.length === 0) return null;
-    const bytes = new Uint8Array(item.thumbnail);
-    const blob = new Blob([bytes], { type: "image/png" });
-    return URL.createObjectURL(blob);
-  }, [item.thumbnail]);
+  const thumbnailUrl = useThumbnail(item.id);
 
   return (
     <div
