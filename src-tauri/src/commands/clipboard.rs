@@ -3,7 +3,7 @@ use crate::db::{
     queries, DbPool,
 };
 use crate::clipboard as clip_util;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -401,6 +401,7 @@ pub async fn process_clipboard_change(
     }
 
     // Process image: generate thumbnail and save original
+    // Note: For file-type images, thumbnail is generated asynchronously after insert (see below)
     let (thumbnail, image_path) = if content_type == ContentType::Image {
         let thumb = clip_util::generate_thumbnail(&content).ok();
         let app_data = app
@@ -409,18 +410,6 @@ pub async fn process_clipboard_change(
             .map_err(|e| e.to_string())?;
         let path = clip_util::save_original_image(&app_data, &content, "png").ok();
         (thumb, path)
-    } else if content_type == ContentType::File {
-        // For image files copied from Finder, generate a thumbnail from the actual file
-        let thumb = file_path.as_ref().and_then(|fp| {
-            if is_image_file(fp) {
-                std::fs::read(fp)
-                    .ok()
-                    .and_then(|data| clip_util::generate_thumbnail(&data).ok())
-            } else {
-                None
-            }
-        });
-        (thumb, None)
     } else {
         (None, None)
     };
@@ -455,5 +444,48 @@ pub async fn process_clipboard_change(
         .map_err(|e| e.to_string())?;
 
     log::info!("New clipboard item stored: {} ({})", id, new_item.content_type.as_str());
+
+    // Background: generate thumbnail for image files (non-blocking)
+    if new_item.content_type == ContentType::File {
+        if let Some(ref fp) = new_item.file_path {
+            if is_image_file(fp) {
+                let pool = db.0.clone();
+                let id_clone = id.clone();
+                let fp_clone = fp.clone();
+                let app_clone = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    let data = match tokio::fs::read(&fp_clone).await {
+                        Ok(d) => d,
+                        Err(e) => {
+                            log::warn!("Failed to read image file for thumbnail: {}", e);
+                            return;
+                        }
+                    };
+                    let thumb = match tokio::task::spawn_blocking(move || {
+                        clip_util::generate_thumbnail(&data)
+                    })
+                    .await
+                    {
+                        Ok(Ok(t)) => t,
+                        _ => {
+                            log::warn!("Failed to generate thumbnail for file");
+                            return;
+                        }
+                    };
+                    if let Err(e) = queries::update_thumbnail(&pool, &id_clone, &thumb).await {
+                        log::warn!("Failed to update thumbnail: {}", e);
+                        return;
+                    }
+                    // Notify frontend to refresh with the new thumbnail
+                    let _ = app_clone.emit(
+                        "clipboard-changed",
+                        serde_json::json!({ "id": id_clone }),
+                    );
+                    log::info!("Thumbnail generated for file item: {}", id_clone);
+                });
+            }
+        }
+    }
+
     Ok(Some(id))
 }

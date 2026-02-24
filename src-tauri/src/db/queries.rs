@@ -258,6 +258,16 @@ async fn search_items_like(
         .collect())
 }
 
+/// Update the thumbnail for an existing clipboard item.
+pub async fn update_thumbnail(pool: &SqlitePool, id: &str, thumbnail: &[u8]) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE clipboard_items SET thumbnail = ? WHERE id = ?")
+        .bind(thumbnail)
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 // ---- Favorites ----
 
 /// Get all favorited items, optionally filtered by content type.
