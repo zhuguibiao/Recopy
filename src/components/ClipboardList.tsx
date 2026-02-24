@@ -71,7 +71,7 @@ export function ClipboardList() {
       {groups.map((group) => (
         <div key={group.label} className="mb-1">
           <div className="text-[11px] font-medium text-muted-foreground px-1 py-1">
-            {group.label}
+            {t(group.label)}
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             {group.items.map(({ item, flatIndex }) => (

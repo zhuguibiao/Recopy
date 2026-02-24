@@ -16,7 +16,7 @@ export function relativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-/** Group label for time-based sections. */
+/** Group label for time-based sections. Returns an i18n key. */
 export function dateGroupLabel(dateStr: string): string {
   const date = new Date(dateStr + "Z");
   const now = new Date();
@@ -26,11 +26,10 @@ export function dateGroupLabel(dateStr: string): string {
     (today.getTime() - itemDay.getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return "This Week";
-  if (diffDays < 30) return "This Month";
-  return date.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+  if (diffDays === 0) return "time.today";
+  if (diffDays < 7) return "time.thisWeek";
+  if (diffDays < 30) return "time.thisMonth";
+  return "time.earlier";
 }
 
 /** Format bytes into human-readable string. */

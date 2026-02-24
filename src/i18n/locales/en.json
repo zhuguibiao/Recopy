@@ -109,8 +109,8 @@
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago",
     "today": "Today",
-    "yesterday": "Yesterday",
-    "daysAgoGroup": "{{count}} days ago",
-    "older": "Older"
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "earlier": "Earlier"
   }
 }
