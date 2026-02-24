@@ -420,39 +420,44 @@ a {
 }
 
 /* ============================================================
-   How it Works
+   How it Works — Timeline
    ============================================================ */
 .how-it-works {
   padding: 80px 0;
   background: var(--bg);
 }
 
-.steps-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  counter-reset: step;
-}
-
-.step-card {
+.timeline {
   position: relative;
-  padding: 32px 24px 28px;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 24px;
+  left: 60px;
+  right: 60px;
+  height: 4px;
+  border-top: 4px dashed var(--border);
+  z-index: 0;
+}
+
+.timeline-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  counter-increment: step;
-  transition: transform 0.12s, box-shadow 0.12s;
+  position: relative;
+  z-index: 1;
 }
 
-.step-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: var(--shadow-hover);
-}
-
-.step-number {
-  display: inline-flex;
+.timeline-number {
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
@@ -464,35 +469,52 @@ a {
   color: #fff;
   border: var(--border-width) solid var(--border);
   border-radius: 50%;
-  box-shadow: 3px 3px 0 var(--border);
-  margin-bottom: 16px;
+  box-shadow: 4px 4px 0 var(--border);
+  margin-bottom: 20px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
 }
 
-.step-card h3 {
+.timeline-step:hover .timeline-number {
+  transform: translateY(-8px) scale(1.15);
+  box-shadow: 6px 10px 0 var(--border);
+}
+
+.timeline-content {
+  padding: 0 8px;
+}
+
+.timeline-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  border: var(--border-width) solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--border);
+}
+
+.timeline-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.timeline-content h3 {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 8px;
 }
 
-.step-card p {
+.timeline-content p {
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.65;
 }
 
-/* Connector lines between steps */
-.steps-list .step-card:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: -14px;
-  width: 8px;
-  height: var(--border-width);
-  background: var(--border);
-}
-
 /* ============================================================
-   Tech Highlights
+   Tech Highlights — Comparison Table
    ============================================================ */
 .tech-highlights {
   padding: 80px 0;
@@ -501,101 +523,186 @@ a {
   border-bottom: var(--border-width) solid var(--border);
 }
 
-.tech-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.tech-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 24px;
+.compare-table {
+  max-width: 900px;
+  margin: 0 auto;
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
-  background: var(--bg);
+  overflow: hidden;
   box-shadow: var(--shadow);
-  transition: transform 0.12s, box-shadow 0.12s;
 }
 
-.tech-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: var(--shadow-hover);
+.compare-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
-.tech-icon {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--border-width) solid var(--border);
-  border-radius: 10px;
+.compare-col {
+  padding: 16px 24px;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.compare-col-others {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.compare-col-recopy {
   background: var(--primary);
   color: #fff;
-  box-shadow: 3px 3px 0 var(--border);
+  border-left: var(--border-width) solid var(--border);
 }
 
-.tech-icon svg {
-  width: 24px;
-  height: 24px;
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 2px solid var(--border);
 }
 
-.tech-content h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 4px;
+.compare-row:last-child {
+  border-bottom: none;
 }
 
-.tech-content p {
-  font-size: 14px;
+.compare-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background 0.15s;
+}
+
+.compare-cell:last-child {
+  border-left: var(--border-width) solid var(--border);
+}
+
+.compare-bad {
+  background: var(--bg);
   color: var(--text-secondary);
-  line-height: 1.6;
+}
+
+.compare-good {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.compare-row:hover .compare-bad {
+  background: color-mix(in srgb, var(--card-pink) 15%, var(--bg));
+}
+
+.compare-row:hover .compare-good {
+  background: color-mix(in srgb, var(--card-lime) 20%, var(--surface));
+}
+
+.compare-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  font-weight: 800;
+  background: var(--card-pink);
+  color: #fff;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+}
+
+.compare-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  font-weight: 800;
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--border);
+  border-radius: 50%;
 }
 
 /* ============================================================
-   Shortcuts
+   Shortcuts — Key Showcase
    ============================================================ */
 .shortcuts {
   padding: 80px 0;
   background: var(--bg);
 }
 
-.shortcuts-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 720px;
+.key-showcase {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 32px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
-.shortcut-row {
+.key-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: 4px 4px 0 var(--border);
-  transition: transform 0.12s, box-shadow 0.12s;
+  gap: 12px;
 }
 
-.shortcut-row:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--border);
+.key-item-accent .key-lg {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--border);
 }
 
-.shortcut-label {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.shortcut-keys {
+.key-combo {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+}
+
+.key-lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 52px;
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--surface);
+  color: var(--text);
+  border: var(--border-width) solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--border);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.key-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--border);
+}
+
+.key-lg:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+.key-wide {
+  min-width: 100px;
+}
+
+.key-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 kbd {
@@ -721,20 +828,47 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .steps-list {
-    grid-template-columns: 1fr;
+  .timeline {
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
   }
 
-  .steps-list .step-card:not(:last-child)::after {
+  .timeline-line {
     display: none;
   }
 
-  .tech-grid {
-    grid-template-columns: 1fr;
+  .compare-table {
+    box-shadow: 4px 4px 0 var(--border);
   }
 
-  .shortcuts-grid {
-    grid-template-columns: 1fr;
+  .compare-cell {
+    padding: 14px 16px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .compare-col {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .compare-x,
+  .compare-check {
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+  }
+
+  .key-showcase {
+    gap: 20px;
+  }
+
+  .key-lg {
+    min-width: 44px;
+    height: 44px;
+    font-size: 16px;
+    padding: 6px 12px;
   }
 
   .cta h2 {

@@ -1,6 +1,6 @@
 # Recopy
 
-A free, open-source clipboard history manager for macOS and Windows.
+A free, open-source clipboard history manager. macOS tested, Windows support in progress.
 
 > Every copy you make, always within reach.
 

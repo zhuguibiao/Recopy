@@ -4,18 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recopy — Every copy you make, always within reach.</title>
-  <meta name="description" content="A free, open-source clipboard history manager for macOS and Windows.">
+  <meta name="description" content="A free, open-source clipboard history manager. macOS tested, Windows support in progress.">
 
   <!-- OG Meta Tags -->
   <meta property="og:title" content="Recopy — Every copy you make, always within reach.">
-  <meta property="og:description" content="A free, open-source clipboard history manager for macOS and Windows. Privacy-first, lightning-fast.">
+  <meta property="og:description" content="A free, open-source clipboard history manager. macOS tested, Windows support in progress. Privacy-first, lightning-fast.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="images/preview.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Recopy — Every copy you make, always within reach.">
-  <meta name="twitter:description" content="A free, open-source clipboard history manager for macOS and Windows. Privacy-first, lightning-fast.">
+  <meta name="twitter:description" content="A free, open-source clipboard history manager. macOS tested, Windows support in progress. Privacy-first, lightning-fast.">
   <meta name="twitter:image" content="images/preview.png">
 
   <!-- Theme init: prevent flash of wrong theme -->
@@ -69,7 +69,7 @@
     <div class="container">
       <div class="hero-badge" data-en="Desktop App" data-zh="桌面应用">Desktop App</div>
       <h1 class="hero-title" data-en="Every copy you make,<br>always within reach." data-zh="你的每一次复制，<br>都不会再丢失。">Every copy you make,<br>always within reach.</h1>
-      <p class="hero-desc" data-en="A free, open-source clipboard history manager for macOS and Windows. Privacy-first, lightning-fast." data-zh="免费开源的跨平台剪贴板历史管理工具。隐私优先，极速响应。">A free, open-source clipboard history manager for macOS and Windows. Privacy-first, lightning-fast.</p>
+      <p class="hero-desc" data-en="A free, open-source clipboard history manager. macOS tested, Windows support in progress. Privacy-first, lightning-fast." data-zh="免费开源的剪贴板历史管理工具。macOS 已测试，Windows 版本开发中。隐私优先，极速响应。">A free, open-source clipboard history manager. macOS tested, Windows support in progress. Privacy-first, lightning-fast.</p>
       <div class="hero-actions">
         <a href="https://github.com/shiqkuangsan/Recopy/releases" class="btn btn-primary" id="hero-download-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -214,124 +214,158 @@
     </div>
   </section>
 
-  <!-- How it Works -->
+  <!-- How it Works — Timeline -->
   <section class="how-it-works">
     <div class="container">
       <h2 class="section-title" data-en="How it Works" data-zh="使用流程">How it Works</h2>
       <p class="section-subtitle" data-en="Three steps. That's all it takes." data-zh="三步搞定，就这么简单。">Three steps. That's all it takes.</p>
-      <div class="steps-list">
-        <!-- Step 1 -->
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-            </svg>
+      <div class="timeline">
+        <div class="timeline-line"></div>
+        <div class="timeline-step">
+          <div class="timeline-number">1</div>
+          <div class="timeline-content">
+            <div class="timeline-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+              </svg>
+            </div>
+            <h3 data-en="Copy anything" data-zh="复制任何内容">Copy anything</h3>
+            <p data-en="Text, images, files — Recopy captures it all automatically in the background." data-zh="文本、图片、文件 — Recopy 在后台自动捕获一切。">Text, images, files — Recopy captures it all automatically in the background.</p>
           </div>
-          <h3 data-en="Copy anything" data-zh="复制任何内容">Copy anything</h3>
-          <p data-en="Text, images, files — Recopy captures it all automatically in the background." data-zh="文本、图片、文件 — Recopy 在后台自动捕获一切。">Text, images, files — Recopy captures it all automatically in the background.</p>
         </div>
-        <!-- Step 2 -->
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/>
-            </svg>
+        <div class="timeline-step">
+          <div class="timeline-number">2</div>
+          <div class="timeline-content">
+            <div class="timeline-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/>
+              </svg>
+            </div>
+            <h3 data-en="Summon Recopy" data-zh="召唤 Recopy">Summon Recopy</h3>
+            <p data-en="Press Cmd+Shift+V to open the panel. Browse or search your clipboard history." data-zh="按下 Cmd+Shift+V 打开面板。浏览或搜索你的剪贴板历史。">Press Cmd+Shift+V to open the panel. Browse or search your clipboard history.</p>
           </div>
-          <h3 data-en="Summon Recopy" data-zh="召唤 Recopy">Summon Recopy</h3>
-          <p data-en="Press Cmd+Shift+V to open the panel. Browse or search your clipboard history." data-zh="按下 Cmd+Shift+V 打开面板。浏览或搜索你的剪贴板历史。">Press Cmd+Shift+V to open the panel. Browse or search your clipboard history.</p>
         </div>
-        <!-- Step 3 -->
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <div class="step-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3-3 3 3"/>
-            </svg>
+        <div class="timeline-step">
+          <div class="timeline-number">3</div>
+          <div class="timeline-content">
+            <div class="timeline-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3-3 3 3"/>
+              </svg>
+            </div>
+            <h3 data-en="Paste it back" data-zh="粘贴回去">Paste it back</h3>
+            <p data-en="Select an item and press Enter. Content is pasted seamlessly into your active app." data-zh="选中条目按 Enter。内容无缝粘贴到你的活跃应用中。">Select an item and press Enter. Content is pasted seamlessly into your active app.</p>
           </div>
-          <h3 data-en="Paste it back" data-zh="粘贴回去">Paste it back</h3>
-          <p data-en="Select an item and press Enter. Content is pasted seamlessly into your active app." data-zh="选中条目按 Enter。内容无缝粘贴到你的活跃应用中。">Select an item and press Enter. Content is pasted seamlessly into your active app.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Tech Highlights -->
+  <!-- Tech Highlights — Comparison Table -->
   <section class="tech-highlights">
     <div class="container">
       <h2 class="section-title" data-en="Under the Hood" data-zh="技术内核">Under the Hood</h2>
       <p class="section-subtitle" data-en="Built with performance and privacy in mind." data-zh="为性能与隐私而生。">Built with performance and privacy in mind.</p>
-      <div class="tech-grid">
-        <!-- Card 1: Local Storage -->
-        <div class="tech-card">
-          <div class="tech-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>
-            </svg>
+      <div class="compare-table">
+        <div class="compare-header">
+          <div class="compare-col compare-col-others" data-en="Others" data-zh="其他工具">Others</div>
+          <div class="compare-col compare-col-recopy" data-en="Recopy" data-zh="Recopy">Recopy</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Cloud sync — data leaves your machine" data-zh="云端同步 — 数据离开你的设备">Cloud sync — data leaves your machine</span>
           </div>
-          <div class="tech-content">
-            <h3 data-en="Local Storage" data-zh="本地存储">Local Storage</h3>
-            <p data-en="Your data stays on your machine. <span class='tech-keyword'>SQLite</span> with <span class='tech-keyword'>WAL</span> mode, zero cloud dependency." data-zh="数据留在你的电脑上。<span class='tech-keyword'>SQLite</span> + <span class='tech-keyword'>WAL</span> 模式，零云端依赖。">Your data stays on your machine. <span class="tech-keyword">SQLite</span> with <span class="tech-keyword">WAL</span> mode, zero cloud dependency.</p>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="Local SQLite + WAL, zero network" data-zh="本地 SQLite + WAL，零网络请求">Local SQLite + WAL, zero network</span>
           </div>
         </div>
-        <!-- Card 2: Smart Dedup -->
-        <div class="tech-card">
-          <div class="tech-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>
-            </svg>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Basic text search, slow on large history" data-zh="基础文本搜索，历史多了就卡">Basic text search, slow on large history</span>
           </div>
-          <div class="tech-content">
-            <h3 data-en="Smart Dedup" data-zh="智能去重">Smart Dedup</h3>
-            <p data-en="<span class='tech-keyword'>SHA-256</span> hashing detects duplicates. Only the latest copy is kept, saving space." data-zh="<span class='tech-keyword'>SHA-256</span> 哈希检测重复，只保留最新一条，节省空间。"><span class="tech-keyword">SHA-256</span> hashing detects duplicates. Only the latest copy is kept, saving space.</p>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="FTS5 + trigram, &lt;5ms across 10k+ items" data-zh="FTS5 + trigram，万条记录 &lt;5ms">FTS5 + trigram, &lt;5ms across 10k+ items</span>
           </div>
         </div>
-        <!-- Card 3: Fuzzy Search -->
-        <div class="tech-card">
-          <div class="tech-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
-            </svg>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Duplicate entries pile up endlessly" data-zh="重复条目无限堆积">Duplicate entries pile up endlessly</span>
           </div>
-          <div class="tech-content">
-            <h3 data-en="Fuzzy Search" data-zh="模糊搜索">Fuzzy Search</h3>
-            <p data-en="<span class='tech-keyword'>FTS5</span> + <span class='tech-keyword'>trigram</span> tokenizer. Search in Chinese or English, find anything." data-zh="<span class='tech-keyword'>FTS5</span> + <span class='tech-keyword'>trigram</span> 分词引擎。中英文搜索，什么都找得到。"><span class="tech-keyword">FTS5</span> + <span class="tech-keyword">trigram</span> tokenizer. Search in Chinese or English, find anything.</p>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="SHA-256 dedup, only latest copy kept" data-zh="SHA-256 去重，只保留最新一条">SHA-256 dedup, only latest copy kept</span>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Telemetry, analytics, usage tracking" data-zh="遥测、分析、使用追踪">Telemetry, analytics, usage tracking</span>
+          </div>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="Zero tracking, fully open-source (MIT)" data-zh="零追踪，完全开源 (MIT)">Zero tracking, fully open-source (MIT)</span>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Steals focus from your active app" data-zh="抢走前台应用焦点">Steals focus from your active app</span>
+          </div>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="Non-activating NSPanel, never steals focus" data-zh="NSPanel 无焦点面板，不抢焦点">Non-activating NSPanel, never steals focus</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Shortcuts -->
+  <!-- Shortcuts — Key Showcase -->
   <section class="shortcuts">
     <div class="container">
       <h2 class="section-title" data-en="Keyboard Shortcuts" data-zh="键盘快捷键">Keyboard Shortcuts</h2>
       <p class="section-subtitle" data-en="Navigate everything from your keyboard." data-zh="全键盘操控，双手不离键盘。">Navigate everything from your keyboard.</p>
-      <div class="shortcuts-grid">
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>V</kbd></div>
-          <span class="shortcut-desc" data-en="Toggle Recopy panel" data-zh="打开/关闭 Recopy 面板">Toggle Recopy panel</span>
+      <div class="key-showcase">
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">⌘</kbd><kbd class="key-lg">⇧</kbd><kbd class="key-lg">V</kbd>
+          </div>
+          <div class="key-label" data-en="Toggle panel" data-zh="打开/关闭面板">Toggle panel</div>
         </div>
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>↑</kbd><kbd>↓</kbd></div>
-          <span class="shortcut-desc" data-en="Navigate items" data-zh="上下导航">Navigate items</span>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">↑</kbd><kbd class="key-lg">↓</kbd>
+          </div>
+          <div class="key-label" data-en="Navigate" data-zh="上下导航">Navigate</div>
         </div>
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>Enter</kbd></div>
-          <span class="shortcut-desc" data-en="Paste selected item" data-zh="粘贴选中条目">Paste selected item</span>
+        <div class="key-item key-item-accent">
+          <div class="key-combo">
+            <kbd class="key-lg key-wide">Enter</kbd>
+          </div>
+          <div class="key-label" data-en="Paste" data-zh="粘贴">Paste</div>
         </div>
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>⌘</kbd><kbd>C</kbd></div>
-          <span class="shortcut-desc" data-en="Copy to clipboard" data-zh="复制到剪贴板">Copy to clipboard</span>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">⌘</kbd><kbd class="key-lg">C</kbd>
+          </div>
+          <div class="key-label" data-en="Copy only" data-zh="仅复制">Copy only</div>
         </div>
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>Esc</kbd></div>
-          <span class="shortcut-desc" data-en="Close panel" data-zh="关闭面板">Close panel</span>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">Esc</kbd>
+          </div>
+          <div class="key-label" data-en="Close" data-zh="关闭">Close</div>
         </div>
-        <div class="shortcut-row">
-          <div class="shortcut-keys"><kbd>⌘</kbd><kbd>F</kbd></div>
-          <span class="shortcut-desc" data-en="Focus search" data-zh="聚焦搜索框">Focus search</span>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">⌘</kbd><kbd class="key-lg">F</kbd>
+          </div>
+          <div class="key-label" data-en="Search" data-zh="搜索">Search</div>
         </div>
       </div>
     </div>
