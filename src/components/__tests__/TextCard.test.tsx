@@ -26,12 +26,12 @@ describe("TextCard", () => {
   });
 
   it("truncates long text", () => {
-    const longText = "A".repeat(300);
+    const longText = "A".repeat(400);
     render(
       <TextCard item={mockItem({ plain_text: longText })} selected={false} onClick={vi.fn()} />
     );
     const pre = screen.getByText(/^A+\.\.\.$/);
-    expect(pre.textContent!.length).toBeLessThan(300);
+    expect(pre.textContent!.length).toBeLessThan(400);
   });
 
   it("shows favorite star when is_favorited", () => {
