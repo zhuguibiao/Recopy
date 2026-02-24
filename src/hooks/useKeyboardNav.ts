@@ -1,23 +1,33 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useClipboardStore } from "../stores/clipboard-store";
 import { useCopyHud } from "../components/CopyHud";
 import { pasteItem, copyToClipboard } from "../lib/paste";
+import { dateGroupLabel } from "../lib/time";
 
 export function useKeyboardNav() {
   const items = useClipboardStore((s) => s.items);
   const selectedIndex = useClipboardStore((s) => s.selectedIndex);
   const setSelectedIndex = useClipboardStore((s) => s.setSelectedIndex);
 
+  // Compute the first flat-index of each date group for up/down navigation.
+  const groupStartIndices = useMemo(() => {
+    const starts: number[] = [];
+    let lastLabel = "";
+    items.forEach((item, i) => {
+      const label = dateGroupLabel(item.updated_at);
+      if (label !== lastLabel) {
+        starts.push(i);
+        lastLabel = label;
+      }
+    });
+    return starts;
+  }, [items]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Don't handle if user is typing in search (handled by search input)
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT") {
-        // Allow arrow keys in search to navigate list
-        if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter" && e.key !== "Escape") {
-          return;
-        }
-      }
+      const isInInput = target.tagName === "INPUT";
 
       // Prevent Tab from cycling focus between UI elements
       if (e.key === "Tab") {
@@ -33,19 +43,61 @@ export function useKeyboardNav() {
         return;
       }
 
+      // --- Input focused: only intercept keys that exit input ---
+      if (isInInput) {
+        if (e.key === "ArrowDown" || e.key === "Escape") {
+          e.preventDefault();
+          (target as HTMLElement).blur();
+          return;
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (items[selectedIndex]) {
+            pasteItem(items[selectedIndex]);
+          }
+          return;
+        }
+        // All other keys (typing, Left/Right cursor, ArrowUp) go to input naturally
+        return;
+      }
+
+      // --- Card navigation mode (input NOT focused) ---
       switch (e.key) {
-        case "ArrowDown":
         case "ArrowRight": {
           e.preventDefault();
-          const next = Math.min(selectedIndex + 1, items.length - 1);
-          setSelectedIndex(next);
+          setSelectedIndex(Math.min(selectedIndex + 1, items.length - 1));
           break;
         }
-        case "ArrowUp":
         case "ArrowLeft": {
           e.preventDefault();
-          const prev = Math.max(selectedIndex - 1, 0);
-          setSelectedIndex(prev);
+          setSelectedIndex(Math.max(selectedIndex - 1, 0));
+          break;
+        }
+        case "ArrowDown": {
+          e.preventDefault();
+          // Jump to the first item of the next date group
+          const curGroup = groupStartIndices.findIndex((start, i) => {
+            const nextStart = groupStartIndices[i + 1] ?? items.length;
+            return selectedIndex >= start && selectedIndex < nextStart;
+          });
+          if (curGroup >= 0 && curGroup < groupStartIndices.length - 1) {
+            setSelectedIndex(groupStartIndices[curGroup + 1]);
+          }
+          break;
+        }
+        case "ArrowUp": {
+          e.preventDefault();
+          // Jump to the first item of the previous date group
+          const curGrp = groupStartIndices.findIndex((start, i) => {
+            const nextStart = groupStartIndices[i + 1] ?? items.length;
+            return selectedIndex >= start && selectedIndex < nextStart;
+          });
+          if (curGrp > 0) {
+            setSelectedIndex(groupStartIndices[curGrp - 1]);
+          } else if (curGrp === 0) {
+            // Already at first group — focus search input
+            document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+          }
           break;
         }
         case "Enter": {
@@ -56,16 +108,11 @@ export function useKeyboardNav() {
           break;
         }
         case "Escape": {
-          // Blur search input to return keyboard control to card navigation
-          const active = document.activeElement as HTMLElement;
-          if (active?.tagName === "INPUT") {
-            e.preventDefault();
-            active.blur();
-          }
+          e.preventDefault();
+          invoke("hide_window");
           break;
         }
         case "c": {
-          // Cmd+C (macOS) or Ctrl+C (Windows/Linux) to copy selected item to clipboard
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
             if (items[selectedIndex]) {
@@ -78,7 +125,7 @@ export function useKeyboardNav() {
         }
       }
     },
-    [items, selectedIndex, setSelectedIndex]
+    [items, selectedIndex, setSelectedIndex, groupStartIndices]
   );
 
   useEffect(() => {
