@@ -16,7 +16,7 @@ fn db_path(app: &AppHandle) -> String {
         .expect("Failed to get app data dir");
     fs::create_dir_all(&app_data).expect("Failed to create app data dir");
     app_data
-        .join("easycv.db")
+        .join("recopy.db")
         .to_string_lossy()
         .to_string()
 }

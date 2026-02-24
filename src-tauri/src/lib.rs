@@ -118,7 +118,7 @@ fn show_main_window(app: &tauri::AppHandle) {
     }
 
     platform::platform_show_window(app);
-    let _ = app.emit("easycv-show", ());
+    let _ = app.emit("recopy-show", ());
 }
 
 /// Hide the main window.
@@ -127,7 +127,7 @@ fn hide_main_window(app: &tauri::AppHandle) {
 }
 
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let show = MenuItemBuilder::with_id("show", "Show EasyCV").build(app)?;
+    let show = MenuItemBuilder::with_id("show", "Show Recopy").build(app)?;
     let settings = MenuItemBuilder::with_id("settings", "Settings...").build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
 
@@ -178,7 +178,7 @@ fn open_settings_window(app: &tauri::AppHandle) {
     // Create new settings window
     let url = tauri::WebviewUrl::App("index.html?page=settings".into());
     match tauri::WebviewWindowBuilder::new(app, "settings", url)
-        .title("EasyCV Settings")
+        .title("Recopy Settings")
         .inner_size(560.0, 480.0)
         .resizable(false)
         .center()

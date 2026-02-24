@@ -30,7 +30,7 @@ Tauri v2 desktop app: **React 19 frontend** communicating with **Rust backend** 
 
 - Frontend calls Rust via `invoke("command_name", { args })` from `@tauri-apps/api/core`
 - Rust emits events to frontend via `app.emit("event-name", payload)` — frontend listens with `listen()`
-- Key events: `"clipboard-changed"` (triggers UI refresh), `"easycv-show"` (panel visibility)
+- Key events: `"clipboard-changed"` (triggers UI refresh), `"recopy-show"` (panel visibility)
 
 ### Backend (src-tauri/src/)
 

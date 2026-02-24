@@ -47,7 +47,7 @@ function MainApp() {
 
   // Listen for show event to replay slide-up animation
   useEffect(() => {
-    const unlisten = listen("easycv-show", () => {
+    const unlisten = listen("recopy-show", () => {
       const el = panelRef.current;
       if (el) {
         el.classList.remove("panel-enter");

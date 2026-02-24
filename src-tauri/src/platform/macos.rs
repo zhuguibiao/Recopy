@@ -5,7 +5,7 @@ use tauri_nspanel::{
 
 // Define custom NSPanel class: non-activating, can receive keyboard events
 tauri_panel! {
-    panel!(EasyCVPanel {
+    panel!(RecopyPanel {
         config: {
             is_floating_panel: true,
             can_become_key_window: true,
@@ -13,7 +13,7 @@ tauri_panel! {
         }
     })
 
-    panel_event!(EasyCVPanelEventHandler {
+    panel_event!(RecopyPanelEventHandler {
         window_did_become_key(notification: &NSNotification) -> (),
         window_did_resign_key(notification: &NSNotification) -> (),
     })
@@ -34,7 +34,7 @@ pub fn init_platform(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>>
         .ok_or("Main window not found")?;
 
     // Convert the Tauri window to our custom NSPanel
-    let panel = window.to_panel::<EasyCVPanel>()?;
+    let panel = window.to_panel::<RecopyPanel>()?;
 
     // Float above Dock (level 20), use MainMenu level (24)
     panel.set_level(PanelLevel::MainMenu.value());
@@ -66,7 +66,7 @@ pub fn init_platform(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>>
     panel.set_hides_on_deactivate(false);
 
     // Set up event handler to forward focus/blur as Tauri events
-    let handler = EasyCVPanelEventHandler::new();
+    let handler = RecopyPanelEventHandler::new();
 
     let app_handle = app.handle().clone();
     handler.window_did_become_key(move |_notification| {
@@ -136,7 +136,7 @@ pub fn init_hud_panel(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>
         return Ok(());
     };
 
-    let panel = window.to_panel::<EasyCVPanel>()?;
+    let panel = window.to_panel::<RecopyPanel>()?;
 
     // Float above the main panel
     panel.set_level(PanelLevel::MainMenu.value() + 1);

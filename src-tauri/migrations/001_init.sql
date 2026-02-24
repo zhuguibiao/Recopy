@@ -1,4 +1,4 @@
--- EasyCV initial schema
+-- Recopy initial schema
 
 -- Main clipboard items table
 CREATE TABLE IF NOT EXISTS clipboard_items (

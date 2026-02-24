@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_save_original_image() {
-        let temp_dir = std::env::temp_dir().join("easycv-test-images");
+        let temp_dir = std::env::temp_dir().join("recopy-test-images");
         let _ = std::fs::remove_dir_all(&temp_dir);
 
         let image_data = vec![0u8; 100];

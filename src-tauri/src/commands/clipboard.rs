@@ -343,7 +343,7 @@ pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
 
     let url = tauri::WebviewUrl::App("index.html?page=settings".into());
     tauri::WebviewWindowBuilder::new(&app, "settings", url)
-        .title("EasyCV Settings")
+        .title("Recopy Settings")
         .inner_size(560.0, 480.0)
         .resizable(false)
         .center()

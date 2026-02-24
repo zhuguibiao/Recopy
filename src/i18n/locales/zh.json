@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "EasyCV",
+    "name": "Recopy",
     "version": "版本 {{version}}",
     "description": "免费开源的跨平台剪贴板历史管理器"
   },
@@ -58,9 +58,9 @@
       "light": "浅色",
       "system": "跟随系统",
       "shortcut": "全局快捷键",
-      "shortcutDesc": "显示/隐藏 EasyCV 的快捷键",
+      "shortcutDesc": "显示/隐藏 Recopy 的快捷键",
       "autoStart": "开机自启动",
-      "autoStartDesc": "登录时自动启动 EasyCV",
+      "autoStartDesc": "登录时自动启动 Recopy",
       "language": "语言",
       "languageDesc": "选择显示语言",
       "closeOnBlur": "失焦隐藏",
@@ -89,8 +89,8 @@
     "privacy": {
       "title": "隐私",
       "accessibility": "辅助功能权限 (macOS)",
-      "accessibilityDesc": "EasyCV 需要辅助功能权限来模拟粘贴 (Cmd+V)。如果没有此权限，内容会被复制到剪贴板但不会自动粘贴。",
-      "accessibilityPath": "系统设置 → 隐私与安全 → 辅助功能 → 启用 EasyCV",
+      "accessibilityDesc": "Recopy 需要辅助功能权限来模拟粘贴 (Cmd+V)。如果没有此权限，内容会被复制到剪贴板但不会自动粘贴。",
+      "accessibilityPath": "系统设置 → 隐私与安全 → 辅助功能 → 启用 Recopy",
       "exclusionList": "应用排除列表",
       "exclusionListDesc": "这些应用的剪贴板内容将不会被记录（即将推出）",
       "comingSoon": "即将推出"

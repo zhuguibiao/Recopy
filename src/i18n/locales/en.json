@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "EasyCV",
+    "name": "Recopy",
     "version": "Version {{version}}",
     "description": "A free, open-source clipboard history manager"
   },
@@ -58,9 +58,9 @@
       "light": "Light",
       "system": "System",
       "shortcut": "Global Shortcut",
-      "shortcutDesc": "Keyboard shortcut to show/hide EasyCV",
+      "shortcutDesc": "Keyboard shortcut to show/hide Recopy",
       "autoStart": "Start at Login",
-      "autoStartDesc": "Automatically start EasyCV when you log in",
+      "autoStartDesc": "Automatically start Recopy when you log in",
       "language": "Language",
       "languageDesc": "Choose display language",
       "closeOnBlur": "Hide on Focus Loss",
@@ -89,8 +89,8 @@
     "privacy": {
       "title": "Privacy",
       "accessibility": "Accessibility Permission (macOS)",
-      "accessibilityDesc": "EasyCV needs Accessibility permission to simulate paste (Cmd+V) after selecting a clipboard item. Without this permission, items will be copied to clipboard but won't be auto-pasted.",
-      "accessibilityPath": "System Settings \u2192 Privacy & Security \u2192 Accessibility \u2192 Enable EasyCV",
+      "accessibilityDesc": "Recopy needs Accessibility permission to simulate paste (Cmd+V) after selecting a clipboard item. Without this permission, items will be copied to clipboard but won't be auto-pasted.",
+      "accessibilityPath": "System Settings \u2192 Privacy & Security \u2192 Accessibility \u2192 Enable Recopy",
       "exclusionList": "App Exclusion List",
       "exclusionListDesc": "Clipboard from these apps won't be recorded (Coming soon)",
       "comingSoon": "Coming soon"

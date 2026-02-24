@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "EasyCV",
+  "productName": "Recopy",
   "version": "0.1.0",
-  "identifier": "com.easycv.app",
+  "identifier": "com.recopy.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "EasyCV",
+        "title": "Recopy",
         "width": 880,
         "height": 380,
         "resizable": false,
@@ -70,7 +70,7 @@
     ],
     "category": "Utility",
     "shortDescription": "Clipboard history manager",
-    "longDescription": "EasyCV is a free, open-source cross-platform clipboard history manager. It monitors your clipboard, stores text, images, rich text, and files, with full-text search, favorites, and groups.",
+    "longDescription": "Recopy is a free, open-source cross-platform clipboard history manager. It monitors your clipboard, stores text, images, rich text, and files, with full-text search, favorites, and groups.",
     "macOS": {
       "minimumSystemVersion": "12.0"
     },
