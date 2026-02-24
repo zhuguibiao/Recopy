@@ -36,13 +36,13 @@ export function TextCard({ item, selected, onClick }: TextCardProps) {
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Type size={12} />
-        <span className="text-xs">{t("card.text")}</span>
+        <Type size={13} />
+        <span className="text-sm">{t("card.text")}</span>
       </div>
-      <pre className="whitespace-pre-wrap break-words text-xs font-mono text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
+      <pre className="whitespace-pre-wrap break-words text-sm font-mono text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
         {preview}
       </pre>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>

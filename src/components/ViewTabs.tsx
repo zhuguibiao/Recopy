@@ -25,7 +25,7 @@ export function ViewTabs() {
           <button
             key={tab.value}
             {...pressHandlers}
-            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors cursor-pointer focus:outline-none
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-sm rounded-md transition-colors cursor-pointer focus:outline-none
               ${
                 viewMode === tab.value
                   ? "text-foreground bg-white/10"

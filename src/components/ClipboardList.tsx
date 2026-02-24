@@ -70,7 +70,7 @@ export function ClipboardList() {
     <div className="h-full overflow-y-auto no-scrollbar">
       {groups.map((group) => (
         <div key={group.label} className="mb-1">
-          <div className="text-[11px] font-medium text-muted-foreground px-1 py-1">
+          <div className="text-xs font-medium text-muted-foreground px-1 py-1">
             {t(group.label)}
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">

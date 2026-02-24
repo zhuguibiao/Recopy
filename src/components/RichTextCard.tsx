@@ -36,13 +36,13 @@ export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <FileText size={12} />
-        <span className="text-xs">{t("card.richText")}</span>
+        <FileText size={13} />
+        <span className="text-sm">{t("card.richText")}</span>
       </div>
-      <div className="text-xs text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
+      <div className="text-sm text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
         {preview}
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>

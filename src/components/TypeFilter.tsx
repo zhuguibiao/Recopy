@@ -22,7 +22,7 @@ export function TypeFilter() {
         <button
           key={f.value}
           {...createPressActionHandlers<HTMLButtonElement>(() => setFilterType(f.value))}
-          className={`px-2 py-1 text-xs rounded-md transition-colors cursor-pointer focus:outline-none
+          className={`px-2 py-1 text-sm rounded-md transition-colors cursor-pointer focus:outline-none
             ${
               filterType === f.value
                 ? "bg-accent text-accent-foreground"

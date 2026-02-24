@@ -54,7 +54,7 @@ export function SearchBar() {
           triggerSearch(e.currentTarget.value);
         }}
         placeholder={t("search.placeholder")}
-        className="w-full bg-input/60 border border-border/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+        className="w-full bg-input/60 border border-border/50 rounded-lg py-1.5 pl-8 pr-7 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
       />
       {searchQuery && (
         <button

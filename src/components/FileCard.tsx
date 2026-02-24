@@ -35,8 +35,8 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <File size={12} />
-        <span className="text-xs">{t("card.file")}</span>
+        <File size={13} />
+        <span className="text-sm">{t("card.file")}</span>
       </div>
       <div className="flex items-center gap-3 py-2">
         <IconComponent size={28} className="text-accent shrink-0" />
@@ -44,13 +44,13 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
           <p className="text-sm text-foreground truncate" title={fileName}>
             {fileName}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {formatSize(item.content_size)}
             {ext && ` \u00B7 .${ext}`}
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>

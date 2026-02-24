@@ -39,9 +39,9 @@ export function ImageCard({ item, selected, onClick }: ImageCardProps) {
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <ImageIcon size={12} />
-        <span className="text-xs">{t("card.image")}</span>
-        <span className="text-xs ml-auto">{formatSize(item.content_size)}</span>
+        <ImageIcon size={13} />
+        <span className="text-sm">{t("card.image")}</span>
+        <span className="text-sm ml-auto">{formatSize(item.content_size)}</span>
       </div>
       <div className="flex items-center justify-center rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
         {thumbnailUrl ? (
@@ -54,7 +54,7 @@ export function ImageCard({ item, selected, onClick }: ImageCardProps) {
           <ImageIcon size={32} className="text-muted-foreground/40" />
         )}
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>
