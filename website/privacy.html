@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recopy — Privacy Policy</title>
+  <meta name="description" content="Recopy Privacy Policy — how your data is stored and protected.">
+
+  <!-- Theme init: prevent flash of wrong theme -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const theme = saved === 'system' || !saved
+        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : saved;
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Blobity: hide default cursor -->
+  <style>
+    body.blobity-active,
+    body.blobity-active a,
+    body.blobity-active button,
+    body.blobity-active [data-blobity],
+    body.blobity-active [data-blobity-tooltip] {
+      cursor: none !important;
+    }
+  </style>
+  <style>
+    .privacy { padding: 60px 0; max-width: 720px; margin: 0 auto; }
+    .privacy h1 { font-size: 36px; margin-bottom: 8px; }
+    .privacy .updated { font-size: 14px; color: var(--text-secondary); margin-bottom: 40px; }
+    .privacy h2 { font-size: 22px; margin-top: 36px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .privacy p, .privacy li { font-size: 16px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 12px; }
+    .privacy ul { padding-left: 24px; }
+    .privacy strong { color: var(--text); }
+    .privacy a { color: var(--primary); border-bottom: 2px solid var(--primary); }
+    .privacy a:hover { opacity: 0.8; }
+    .privacy code { font-family: var(--font-mono); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <path d="M9 14l2 2 4-4"/>
+        </svg>
+        <span>Recopy</span>
+      </a>
+      <div class="nav-actions">
+        <a href="/" class="nav-link" data-en="Home" data-zh="首页">Home</a>
+        <button class="btn btn-sm" data-theme-icon onclick="toggleTheme()">&#9728;&#65039;</button>
+        <button id="lang-toggle" class="btn btn-sm" onclick="toggleLang()">&#20013;&#25991;</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="privacy container">
+    <h1 data-en="Privacy Policy" data-zh="隐私政策">Privacy Policy</h1>
+    <p class="updated" data-en="Last updated: 2026-02-24" data-zh="最后更新：2026-02-24">Last updated: 2026-02-24</p>
+
+    <!-- Section 1: What Recopy Stores -->
+    <h2 data-en="What Recopy Stores" data-zh="Recopy 存储的内容">What Recopy Stores</h2>
+    <ul>
+      <li data-en="<strong>Clipboard content</strong>: plain text, rich text, image paths, and file paths" data-zh="<strong>剪贴板内容</strong>：纯文本、富文本、图片路径和文件路径"><strong>Clipboard content</strong>: plain text, rich text, image paths, and file paths</li>
+      <li data-en="<strong>Thumbnails</strong>: images resized to 400px max width, stored as binary blobs in local SQLite" data-zh="<strong>缩略图</strong>：图片缩放至最大 400px 宽度，以二进制形式存储在本地 SQLite 中"><strong>Thumbnails</strong>: images resized to 400px max width, stored as binary blobs in local SQLite</li>
+      <li data-en="<strong>Original images</strong>: saved to the app data directory on disk" data-zh="<strong>原始图片</strong>：保存到应用数据目录中"><strong>Original images</strong>: saved to the app data directory on disk</li>
+      <li data-en="<strong>Content hashes</strong>: SHA-256 hashes used for deduplication" data-zh="<strong>内容哈希</strong>：SHA-256 哈希值，用于去重"><strong>Content hashes</strong>: SHA-256 hashes used for deduplication</li>
+      <li data-en="<strong>Timestamps and metadata</strong>: creation time, update time, source application name" data-zh="<strong>时间戳和元数据</strong>：创建时间、更新时间、来源应用名称"><strong>Timestamps and metadata</strong>: creation time, update time, source application name</li>
+    </ul>
+
+    <!-- Section 2: Where Data is Stored -->
+    <h2 data-en="Where Data is Stored" data-zh="数据存储位置">Where Data is Stored</h2>
+    <p data-en="All data is stored in a local SQLite database (WAL mode). Nothing is synced to the cloud." data-zh="所有数据存储在本地 SQLite 数据库中（WAL 模式）。没有任何内容会同步到云端。">All data is stored in a local SQLite database (WAL mode). Nothing is synced to the cloud.</p>
+    <ul>
+      <li data-en="<strong>macOS</strong>: <code>~/Library/Application Support/com.recopy.app/</code>" data-zh="<strong>macOS</strong>：<code>~/Library/Application Support/com.recopy.app/</code>"><strong>macOS</strong>: <code>~/Library/Application Support/com.recopy.app/</code></li>
+      <li data-en="<strong>Windows</strong>: <code>%APPDATA%/com.recopy.app/</code>" data-zh="<strong>Windows</strong>：<code>%APPDATA%/com.recopy.app/</code>"><strong>Windows</strong>: <code>%APPDATA%/com.recopy.app/</code></li>
+      <li data-en="<strong>Images</strong>: <code>{app_data}/images/YYYY-MM/</code>" data-zh="<strong>图片</strong>：<code>{app_data}/images/YYYY-MM/</code>"><strong>Images</strong>: <code>{app_data}/images/YYYY-MM/</code></li>
+    </ul>
+
+    <!-- Section 3: What We Don't Do -->
+    <h2 data-en="What We Don't Do" data-zh="我们不做的事">What We Don't Do</h2>
+    <ul>
+      <li data-en="<strong>No data collection</strong> — we never collect any of your clipboard data" data-zh="<strong>不收集数据</strong> — 我们从不收集你的任何剪贴板数据"><strong>No data collection</strong> — we never collect any of your clipboard data</li>
+      <li data-en="<strong>No analytics or telemetry</strong> — no usage tracking of any kind" data-zh="<strong>无分析或遥测</strong> — 没有任何形式的使用追踪"><strong>No analytics or telemetry</strong> — no usage tracking of any kind</li>
+      <li data-en="<strong>No cloud sync</strong> — your data never leaves your machine" data-zh="<strong>无云同步</strong> — 你的数据永远不会离开你的电脑"><strong>No cloud sync</strong> — your data never leaves your machine</li>
+      <li data-en="<strong>No network requests</strong> — except checking for updates in a future release" data-zh="<strong>无网络请求</strong> — 未来版本可能会检查更新，除此之外没有任何网络请求"><strong>No network requests</strong> — except checking for updates in a future release</li>
+      <li data-en="<strong>No third-party services</strong> — zero external dependencies at runtime" data-zh="<strong>无第三方服务</strong> — 运行时零外部依赖"><strong>No third-party services</strong> — zero external dependencies at runtime</li>
+    </ul>
+
+    <!-- Section 4: Data Retention -->
+    <h2 data-en="Data Retention" data-zh="数据保留">Data Retention</h2>
+    <ul>
+      <li data-en="Users control the retention policy: by days, by count, or unlimited" data-zh="用户可控制保留策略：按天数、按条数，或无限保留">Users control the retention policy: by days, by count, or unlimited</li>
+      <li data-en="Favorited items are protected from auto-cleanup" data-zh="收藏的条目不受自动清理影响">Favorited items are protected from auto-cleanup</li>
+      <li data-en="You can clear all clipboard history at any time from Settings" data-zh="你可以随时在设置中清除所有剪贴板历史">You can clear all clipboard history at any time from Settings</li>
+    </ul>
+
+    <!-- Section 5: Open Source -->
+    <h2 data-en="Open Source" data-zh="开源">Open Source</h2>
+    <p data-en="Recopy is fully open-source. You can inspect every line of code on <a href='https://github.com/shiqkuangsan/Recopy'>GitHub</a>. Licensed under the <a href='https://github.com/shiqkuangsan/Recopy/blob/main/LICENSE'>MIT License</a>." data-zh="Recopy 完全开源。你可以在 <a href='https://github.com/shiqkuangsan/Recopy'>GitHub</a> 上查看每一行代码。基于 <a href='https://github.com/shiqkuangsan/Recopy/blob/main/LICENSE'>MIT 许可证</a> 发布。">Recopy is fully open-source. You can inspect every line of code on <a href="https://github.com/shiqkuangsan/Recopy">GitHub</a>. Licensed under the <a href="https://github.com/shiqkuangsan/Recopy/blob/main/LICENSE">MIT License</a>.</p>
+
+    <!-- Section 6: Contact -->
+    <h2 data-en="Contact" data-zh="联系方式">Contact</h2>
+    <p data-en="If you have any questions about this privacy policy, please open an issue on <a href='https://github.com/shiqkuangsan/Recopy/issues'>GitHub</a>." data-zh="如果你对本隐私政策有任何疑问，请在 <a href='https://github.com/shiqkuangsan/Recopy/issues'>GitHub</a> 上提交 Issue。">If you have any questions about this privacy policy, please open an issue on <a href="https://github.com/shiqkuangsan/Recopy/issues">GitHub</a>.</p>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>&copy; 2026 Recopy</span>
+      <div class="footer-links">
+        <a href="/" data-en="Home" data-zh="首页">Home</a>
+        <a href="https://github.com/shiqkuangsan/Recopy">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
