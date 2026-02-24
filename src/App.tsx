@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { Check } from "lucide-react";
 import { SearchBar } from "./components/SearchBar";
 import { TypeFilter } from "./components/TypeFilter";
 import { ViewTabs } from "./components/ViewTabs";
@@ -8,10 +10,11 @@ import { SettingsPage } from "./components/SettingsPage";
 import { useClipboardStore } from "./stores/clipboard-store";
 import { useSettingsStore } from "./stores/settings-store";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
-import { CopyHud } from "./components/CopyHud";
 
-// Detect if this window is the settings page
-const isSettingsPage = new URLSearchParams(window.location.search).get("page") === "settings";
+// Detect page type from URL params
+const pageParam = new URLSearchParams(window.location.search).get("page");
+const isSettingsPage = pageParam === "settings";
+const isHudPage = pageParam === "hud";
 
 function MainApp() {
   const fetchItems = useClipboardStore((s) => s.fetchItems);
@@ -78,7 +81,6 @@ function MainApp() {
           <ClipboardList />
         </div>
       </div>
-      <CopyHud />
     </div>
   );
 }
@@ -93,8 +95,30 @@ function SettingsApp() {
   return <SettingsPage />;
 }
 
+function HudApp() {
+  const { t } = useTranslation();
+  const loadSettings = useSettingsStore((s) => s.loadSettings);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  return (
+    <div className="h-screen w-screen flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center">
+        <Check className="text-white drop-shadow-lg" size={52} strokeWidth={2.5} />
+        <span className="text-white text-xl font-semibold mt-2 drop-shadow-lg">
+          {t("context.copied")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  return isSettingsPage ? <SettingsApp /> : <MainApp />;
+  if (isHudPage) return <HudApp />;
+  if (isSettingsPage) return <SettingsApp />;
+  return <MainApp />;
 }
 
 export default App;

@@ -129,6 +129,53 @@ pub fn platform_is_visible(app: &tauri::AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+/// Initialize the HUD window as NSPanel (non-activating).
+pub fn init_hud_panel(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let Some(window) = app.get_webview_window("hud") else {
+        log::warn!("HUD window not found, skipping panel init");
+        return Ok(());
+    };
+
+    let panel = window.to_panel::<EasyCVPanel>()?;
+
+    // Float above the main panel
+    panel.set_level(PanelLevel::MainMenu.value() + 1);
+
+    // Non-activating: clicking the HUD doesn't activate the app
+    panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
+
+    panel.set_collection_behavior(
+        CollectionBehavior::new()
+            .stationary()
+            .can_join_all_spaces()
+            .full_screen_auxiliary()
+            .ignores_cycle()
+            .into(),
+    );
+
+    panel.set_hides_on_deactivate(false);
+
+    log::info!("NSPanel initialized for HUD window");
+    Ok(())
+}
+
+/// Show the HUD panel without making it key (non-focus-stealing).
+pub fn platform_show_hud(app: &tauri::AppHandle) {
+    if let Ok(panel) = app.get_webview_panel("hud") {
+        panel.show();
+    }
+}
+
+/// Hide the HUD panel.
+pub fn platform_hide_hud(app: &tauri::AppHandle) {
+    let app_inner = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        if let Ok(panel) = app_inner.get_webview_panel("hud") {
+            panel.hide();
+        }
+    });
+}
+
 /// Resign key window status without hiding.
 /// This returns keyboard focus to the previously active app
 /// so that simulate_paste() sends Cmd+V to the correct target.

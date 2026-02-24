@@ -29,6 +29,25 @@
           "state": "active",
           "radius": 12
         }
+      },
+      {
+        "label": "hud",
+        "url": "index.html?page=hud",
+        "title": "",
+        "width": 140,
+        "height": 140,
+        "resizable": false,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "visible": false,
+        "skipTaskbar": true,
+        "windowEffects": {
+          "effects": ["hudWindow"],
+          "state": "active",
+          "radius": 20
+        }
       }
     ],
     "trayIcon": {

@@ -48,6 +48,7 @@ pub fn run() {
             clip_cmd::run_retention_cleanup,
             clip_cmd::open_settings_window,
             clip_cmd::hide_window,
+            clip_cmd::show_copy_hud,
         ])
         .setup(|app| {
             // Initialize database
@@ -60,6 +61,11 @@ pub fn run() {
 
             // Initialize platform (convert window to NSPanel on macOS)
             platform::init_platform(app)?;
+
+            // Initialize HUD panel (non-activating copy feedback)
+            if let Err(e) = platform::init_hud_panel(app) {
+                log::warn!("Failed to init HUD panel: {}", e);
+            }
 
             // Setup system tray
             setup_tray(app)?;

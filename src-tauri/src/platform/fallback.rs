@@ -32,3 +32,19 @@ pub fn platform_is_visible(app: &tauri::AppHandle) -> bool {
 pub fn platform_resign_before_paste(app: &tauri::AppHandle) {
     platform_hide_window(app);
 }
+
+pub fn init_hud_panel(_app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
+pub fn platform_show_hud(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("hud") {
+        let _ = window.show();
+    }
+}
+
+pub fn platform_hide_hud(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("hud") {
+        let _ = window.hide();
+    }
+}

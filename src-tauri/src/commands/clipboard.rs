@@ -5,6 +5,9 @@ use crate::db::{
 use crate::clipboard as clip_util;
 use tauri::{AppHandle, Manager, State};
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static HUD_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Get clipboard items with optional filters.
 #[tauri::command]
@@ -288,6 +291,44 @@ pub async fn run_retention_cleanup(
 #[tauri::command]
 pub fn hide_window(app: AppHandle) {
     crate::platform::platform_hide_window(&app);
+}
+
+/// Show copy HUD: hide main window, display a centered HUD briefly.
+#[tauri::command]
+pub fn show_copy_hud(app: AppHandle) {
+    // Hide main window first
+    crate::platform::platform_hide_window(&app);
+
+    // Position HUD at screen center
+    if let Some(hud) = app.get_webview_window("hud") {
+        if let Ok(Some(monitor)) = hud.current_monitor() {
+            let size = monitor.size();
+            let pos = monitor.position();
+            let scale = monitor.scale_factor();
+            let screen_w = size.width as f64 / scale;
+            let screen_h = size.height as f64 / scale;
+            let hud_w = 140.0;
+            let hud_h = 140.0;
+            let x = pos.x as f64 / scale + (screen_w - hud_w) / 2.0;
+            let y = pos.y as f64 / scale + (screen_h - hud_h) / 2.0;
+            let _ = hud.set_position(tauri::Position::Logical(
+                tauri::LogicalPosition::new(x, y),
+            ));
+        }
+    }
+
+    // Show HUD panel (non-activating on macOS)
+    crate::platform::platform_show_hud(&app);
+
+    // Auto-hide after 800ms (generation counter prevents stale timers)
+    let gen = HUD_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    let app_clone = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(800));
+        if HUD_GENERATION.load(Ordering::SeqCst) == gen {
+            crate::platform::platform_hide_hud(&app_clone);
+        }
+    });
 }
 
 /// Open the settings window.
