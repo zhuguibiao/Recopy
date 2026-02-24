@@ -333,7 +333,27 @@ async fn extract_clipboard_content(
     if let Ok(true) = tauri_plugin_clipboard_x::has_files().await {
         if let Ok(file_result) = tauri_plugin_clipboard_x::read_files().await {
             if let Some(first) = file_result.paths.first() {
-                let file_name = std::path::Path::new(first)
+                let path = std::path::Path::new(first);
+
+                // Skip directories
+                if path.is_dir() {
+                    log::info!("Skipping directory: {}", first);
+                    return None;
+                }
+
+                // Skip files larger than size limit
+                if let Ok(meta) = path.metadata() {
+                    if clipboard::exceeds_size_limit(meta.len() as usize) {
+                        log::info!(
+                            "Skipping large file: {} ({}B)",
+                            first,
+                            meta.len()
+                        );
+                        return None;
+                    }
+                }
+
+                let file_name = path
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string());
                 let content = first.as_bytes().to_vec();

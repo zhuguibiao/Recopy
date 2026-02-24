@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ClipboardItem } from "../lib/types";
 import { relativeTime, formatSize } from "../lib/time";
@@ -19,6 +20,13 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const IconComponent = getFileIcon(ext);
 
+  const thumbnailUrl = useMemo(() => {
+    if (!item.thumbnail || item.thumbnail.length === 0) return null;
+    const bytes = new Uint8Array(item.thumbnail);
+    const blob = new Blob([bytes], { type: "image/png" });
+    return URL.createObjectURL(blob);
+  }, [item.thumbnail]);
+
   return (
     <div
       role="button"
@@ -29,7 +37,7 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
     >
       {item.is_favorited && (
         <Star
-          className="absolute top-2 right-2 text-yellow-500"
+          className="absolute top-2 right-2 text-yellow-500 z-10"
           size={14}
           fill="currentColor"
         />
@@ -37,19 +45,37 @@ export function FileCard({ item, selected, onClick }: FileCardProps) {
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <File size={13} />
         <span className="text-sm">{t("card.file")}</span>
+        {thumbnailUrl && (
+          <span className="text-sm ml-auto">{formatSize(item.content_size)}</span>
+        )}
       </div>
-      <div className="flex items-center gap-3 py-2">
-        <IconComponent size={28} className="text-accent shrink-0" />
-        <div className="min-w-0">
-          <p className="text-sm text-foreground truncate" title={fileName}>
+      {thumbnailUrl ? (
+        <>
+          <div className="flex items-center justify-center rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
+            <img
+              src={thumbnailUrl}
+              alt={fileName}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+          <div className="text-sm text-muted-foreground truncate" title={fileName}>
             {fileName}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {formatSize(item.content_size)}
-            {ext && ` \u00B7 .${ext}`}
-          </p>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center gap-3 py-2">
+          <IconComponent size={28} className="text-accent shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-foreground truncate" title={fileName}>
+              {fileName}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formatSize(item.content_size)}
+              {ext && ` \u00B7 .${ext}`}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>

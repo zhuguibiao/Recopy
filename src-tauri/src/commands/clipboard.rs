@@ -353,6 +353,20 @@ pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Check if a file path has an image extension.
+fn is_image_file(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".png")
+        || lower.ends_with(".jpg")
+        || lower.ends_with(".jpeg")
+        || lower.ends_with(".gif")
+        || lower.ends_with(".webp")
+        || lower.ends_with(".bmp")
+        || lower.ends_with(".tiff")
+        || lower.ends_with(".tif")
+        || lower.ends_with(".ico")
+}
+
 /// Process and store a new clipboard entry from the monitoring system.
 /// Called internally, not directly from frontend.
 pub async fn process_clipboard_change(
@@ -395,8 +409,31 @@ pub async fn process_clipboard_change(
             .map_err(|e| e.to_string())?;
         let path = clip_util::save_original_image(&app_data, &content, "png").ok();
         (thumb, path)
+    } else if content_type == ContentType::File {
+        // For image files copied from Finder, generate a thumbnail from the actual file
+        let thumb = file_path.as_ref().and_then(|fp| {
+            if is_image_file(fp) {
+                std::fs::read(fp)
+                    .ok()
+                    .and_then(|data| clip_util::generate_thumbnail(&data).ok())
+            } else {
+                None
+            }
+        });
+        (thumb, None)
     } else {
         (None, None)
+    };
+
+    // For file items, use the actual file size instead of the path string length
+    let content_size = if content_type == ContentType::File {
+        file_path
+            .as_ref()
+            .and_then(|fp| std::fs::metadata(fp).ok())
+            .map(|m| m.len() as i64)
+            .unwrap_or(content.len() as i64)
+    } else {
+        content.len() as i64
     };
 
     let new_item = NewClipboardItem {
@@ -409,7 +446,7 @@ pub async fn process_clipboard_change(
         file_name,
         source_app,
         source_app_name,
-        content_size: content.len() as i64,
+        content_size,
         content_hash: hash,
     };
 
