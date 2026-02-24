@@ -80,7 +80,7 @@ function MainApp() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 px-2 pb-1">
+        <div className="flex-1 min-h-0 px-5 pb-1">
           <ClipboardList />
         </div>
       </div>
