@@ -283,12 +283,18 @@ function detectPlatform() {
 function updateDownloadButtons() {
   const platform = detectPlatform();
   const downloadBtn = document.getElementById('download-btn');
+  const heroBtn = document.getElementById('hero-download-btn');
+  const heroSpan = heroBtn ? heroBtn.querySelector('span[data-en]') : null;
   const ctaBtn = document.getElementById('cta-download-btn');
 
   if (platform === 'windows') {
     if (downloadBtn) {
       downloadBtn.setAttribute('data-en', 'Download for Windows');
       downloadBtn.setAttribute('data-zh', '下载 Windows 版');
+    }
+    if (heroSpan) {
+      heroSpan.setAttribute('data-en', 'Download for Windows');
+      heroSpan.setAttribute('data-zh', '下载 Windows 版');
     }
     if (ctaBtn) {
       ctaBtn.setAttribute('data-en', 'Download for Windows');
