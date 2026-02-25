@@ -19,6 +19,10 @@ jobs:
             os: macos-latest
             target: aarch64-apple-darwin
             bundles: dmg
+          - name: macOS-x64
+            os: macos-latest
+            target: x86_64-apple-darwin
+            bundles: dmg
           - name: Windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -52,7 +56,20 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Recopy ${{ github.ref_name }}"
-          releaseBody: "See the assets to download and install this version."
+          releaseBody: |
+            ## Downloads
+
+            | Platform | File |
+            |----------|------|
+            | macOS (Apple Silicon) | `Recopy_x.x.x_aarch64.dmg` |
+            | macOS (Intel) | `Recopy_x.x.x_x64.dmg` |
+            | Windows (64-bit) | `Recopy_x.x.x_x64-setup.exe` |
+
+            > **macOS note:** The app is not notarized yet. On first launch, right-click the app → Open, then confirm.
+
+            ## What's New
+
+            <!-- Replace with actual changelog before publishing -->
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
