@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { ClipboardItem } from "../lib/types";
 import { relativeTime } from "../lib/time";
+import { createPressActionHandlers } from "../lib/press-action";
 import { Star, Type } from "lucide-react";
 
 interface TextCardProps {
@@ -15,13 +16,15 @@ const MAX_CHARS = 300;
 export function TextCard({ item, selected, onClick }: TextCardProps) {
   const { t } = useTranslation();
   const preview = truncateText(item.plain_text, MAX_CHARS, MAX_LINES);
+  const pressHandlers = createPressActionHandlers<HTMLDivElement>(onClick, {
+    enableKeyboardHandler: true,
+  });
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => e.key === "Enter" && onClick()}
+      {...pressHandlers}
       className={`relative flex flex-col gap-1.5 rounded-lg border p-2.5 cursor-pointer transition-colors h-full overflow-hidden
         ${selected ? "border-accent bg-accent/10" : "border-border/50 bg-card/60 hover:border-muted-foreground/30 hover:bg-card/80"}`}
     >
@@ -33,13 +36,13 @@ export function TextCard({ item, selected, onClick }: TextCardProps) {
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Type size={12} />
-        <span className="text-xs">{t("card.text")}</span>
+        <Type size={13} />
+        <span className="text-sm">{t("card.text")}</span>
       </div>
-      <pre className="whitespace-pre-wrap break-words text-xs font-mono text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
+      <pre className="whitespace-pre-wrap break-words text-sm font-mono text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
         {preview}
       </pre>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>

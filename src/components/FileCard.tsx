@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import type { ClipboardItem } from "../lib/types";
 import { relativeTime, formatSize } from "../lib/time";
+import { createPressActionHandlers } from "../lib/press-action";
 import { Star, File, FileArchive, FileImage, FileCode, FileText } from "lucide-react";
+import { useThumbnail } from "../hooks/useThumbnail";
 
 interface FileCardProps {
   item: ClipboardItem;
@@ -9,45 +11,71 @@ interface FileCardProps {
   onClick: () => void;
 }
 
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "tiff", "tif"]);
+
 export function FileCard({ item, selected, onClick }: FileCardProps) {
   const { t } = useTranslation();
+  const pressHandlers = createPressActionHandlers<HTMLDivElement>(onClick, {
+    enableKeyboardHandler: true,
+  });
   const fileName = item.file_name || item.file_path || t("card.unknownFile");
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   const IconComponent = getFileIcon(ext);
+
+  // Only fetch thumbnail for image files
+  const isImageFile = IMAGE_EXTS.has(ext);
+  const thumbnailUrl = useThumbnail(isImageFile ? item.id : null);
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => e.key === "Enter" && onClick()}
+      {...pressHandlers}
       className={`relative flex flex-col gap-1.5 rounded-lg border p-2.5 cursor-pointer transition-colors h-full overflow-hidden
         ${selected ? "border-accent bg-accent/10" : "border-border/50 bg-card/60 hover:border-muted-foreground/30 hover:bg-card/80"}`}
     >
       {item.is_favorited && (
         <Star
-          className="absolute top-2 right-2 text-yellow-500"
+          className="absolute top-2 right-2 text-yellow-500 z-10"
           size={14}
           fill="currentColor"
         />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <File size={12} />
-        <span className="text-xs">{t("card.file")}</span>
+        <File size={13} />
+        <span className="text-sm">{t("card.file")}</span>
+        {thumbnailUrl && (
+          <span className="text-sm ml-auto">{formatSize(item.content_size)}</span>
+        )}
       </div>
-      <div className="flex items-center gap-3 py-2">
-        <IconComponent size={28} className="text-accent shrink-0" />
-        <div className="min-w-0">
-          <p className="text-sm text-foreground truncate" title={fileName}>
+      {thumbnailUrl ? (
+        <>
+          <div className="flex items-center justify-center rounded-md bg-muted/30 overflow-hidden flex-1 min-h-0">
+            <img
+              src={thumbnailUrl}
+              alt={fileName}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+          <div className="text-sm text-muted-foreground truncate" title={fileName}>
             {fileName}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {formatSize(item.content_size)}
-            {ext && ` \u00B7 .${ext}`}
-          </p>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center gap-3 py-2">
+          <IconComponent size={28} className="text-accent shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-foreground truncate" title={fileName}>
+              {fileName}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formatSize(item.content_size)}
+              {ext && ` \u00B7 .${ext}`}
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-1.5">
+      )}
+      <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto pt-1.5">
         <span>{item.source_app_name || t("card.unknown")}</span>
         <span>{relativeTime(item.updated_at)}</span>
       </div>

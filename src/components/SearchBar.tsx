@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { Search, X } from "lucide-react";
 import { useClipboardStore } from "../stores/clipboard-store";
 
@@ -12,20 +11,9 @@ export function SearchBar() {
   const searchItems = useClipboardStore((s) => s.searchItems);
   const fetchItems = useClipboardStore((s) => s.fetchItems);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const composingRef = useRef(false);
 
-  // Auto-focus on mount and on panel show
-  useEffect(() => {
-    inputRef.current?.focus();
-    const unlisten = listen("recopy-show", () => {
-      inputRef.current?.focus();
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  const handleChange = (value: string) => {
-    setSearchQuery(value);
+  const triggerSearch = (value: string) => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       if (value.trim()) {
@@ -34,6 +22,13 @@ export function SearchBar() {
         fetchItems();
       }
     }, 150);
+  };
+
+  const handleChange = (value: string) => {
+    setSearchQuery(value);
+    if (!composingRef.current) {
+      triggerSearch(value);
+    }
   };
 
   const handleClear = () => {
@@ -53,8 +48,13 @@ export function SearchBar() {
         type="text"
         value={searchQuery}
         onChange={(e) => handleChange(e.target.value)}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={(e) => {
+          composingRef.current = false;
+          triggerSearch(e.currentTarget.value);
+        }}
         placeholder={t("search.placeholder")}
-        className="w-full bg-input/60 border border-border/50 rounded-lg py-1.5 pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+        className="w-full bg-input/60 border border-border/50 rounded-lg py-1.5 pl-8 pr-7 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
       />
       {searchQuery && (
         <button

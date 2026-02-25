@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { Check } from "lucide-react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { Check, Settings } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { SearchBar } from "./components/SearchBar";
 import { TypeFilter } from "./components/TypeFilter";
 import { ViewTabs } from "./components/ViewTabs";
@@ -19,6 +21,7 @@ const isHudPage = pageParam === "hud";
 function MainApp() {
   const fetchItems = useClipboardStore((s) => s.fetchItems);
   const refreshOnChange = useClipboardStore((s) => s.refreshOnChange);
+  const onPanelShow = useClipboardStore((s) => s.onPanelShow);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -45,22 +48,30 @@ function MainApp() {
     };
   }, [refreshOnChange]);
 
-  // Listen for show event to replay slide-up animation and reset to history tab
+  // Reset panel visual state when hidden (blur) so next show starts clean.
+  // Use window-scoped listener so other windows (settings) don't trigger this.
   useEffect(() => {
-    const unlisten = listen("recopy-show", () => {
-      // Reset to history tab only if not already there, to avoid
-      // unnecessary fetchItems() racing with subsequent user clicks
-      const { viewMode, setViewMode } = useClipboardStore.getState();
-      if (viewMode !== "history") {
-        setViewMode("history");
-      }
-
+    const currentWindow = getCurrentWebviewWindow();
+    const unlisten = currentWindow.listen("tauri://blur", () => {
       const el = panelRef.current;
       if (el) {
         el.classList.remove("panel-enter");
         el.classList.add("panel-idle");
-        // Force reflow to restart animation
-        void el.offsetWidth;
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  // Listen for show event to replay slide-up animation and refresh data.
+  useEffect(() => {
+    const unlisten = listen("recopy-show", () => {
+      void onPanelShow();
+
+      const el = panelRef.current;
+      if (el) {
+        // Content is already in panel-idle state (set on blur), just start animation
         el.classList.remove("panel-idle");
         el.classList.add("panel-enter");
       }
@@ -68,7 +79,7 @@ function MainApp() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, []);
+  }, [onPanelShow]);
 
   return (
     <div className="h-screen w-screen flex flex-col">
@@ -77,14 +88,20 @@ function MainApp() {
         className="panel-idle w-full h-full text-foreground flex flex-col font-sans overflow-hidden"
       >
         {/* Header — single row, centered */}
-        <div className="flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0" data-tauri-drag-region>
+        <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0" data-tauri-drag-region>
           <ViewTabs />
           <SearchBar />
           <TypeFilter />
+          <button
+            onClick={() => invoke("open_settings_window")}
+            className="absolute right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+          >
+            <Settings size={16} />
+          </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 px-2 pb-1">
+        <div className="flex-1 min-h-0 px-5 pb-1">
           <ClipboardList />
         </div>
       </div>

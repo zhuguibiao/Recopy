@@ -26,6 +26,9 @@ Thumbs.db
 # Logs
 *.log
 
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
 # Local task tracking
 todos/
 CLAUDE.local.md
