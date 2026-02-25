@@ -4,29 +4,49 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to build"
+        required: true
+        type: choice
+        options:
+          - all
+          - macOS-arm64
+          - macOS-x64
+          - Windows-x64
 
 permissions:
   contents: write
 
 jobs:
+  prepare:
+    name: Prepare matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          ALL='[
+            {"name":"macOS-arm64","os":"macos-latest","target":"aarch64-apple-darwin","bundles":"dmg"},
+            {"name":"macOS-x64","os":"macos-latest","target":"x86_64-apple-darwin","bundles":"dmg"},
+            {"name":"Windows-x64","os":"windows-latest","target":"x86_64-pc-windows-msvc","bundles":"nsis"}
+          ]'
+
+          if [[ "${{ github.event_name }}" == "push" || "${{ inputs.platform }}" == "all" ]]; then
+            echo "matrix={\"include\":$(echo "$ALL" | jq -c .)}" >> $GITHUB_OUTPUT
+          else
+            PLATFORM="${{ inputs.platform }}"
+            echo "matrix={\"include\":$(echo "$ALL" | jq -c --arg p "$PLATFORM" '[.[] | select(.name == $p)]')}" >> $GITHUB_OUTPUT
+          fi
+
   build:
     name: Build (${{ matrix.name }})
+    needs: prepare
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: macOS-arm64
-            os: macos-latest
-            target: aarch64-apple-darwin
-            bundles: dmg
-          - name: macOS-x64
-            os: macos-latest
-            target: x86_64-apple-darwin
-            bundles: dmg
-          - name: Windows-x64
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            bundles: nsis
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -49,7 +69,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build Tauri app
+      - name: Build Tauri app (release)
+        if: github.event_name == 'push'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,3 +94,21 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Build Tauri app (test)
+        if: github.event_name == 'workflow_dispatch'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Upload build artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.name }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+          retention-days: 7
