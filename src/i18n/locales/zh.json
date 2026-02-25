@@ -109,8 +109,8 @@
     "hoursAgo": "{{count}}小时前",
     "daysAgo": "{{count}}天前",
     "today": "今天",
-    "yesterday": "昨天",
-    "daysAgoGroup": "{{count}}天前",
-    "older": "更早"
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "earlier": "更早以前"
   }
 }

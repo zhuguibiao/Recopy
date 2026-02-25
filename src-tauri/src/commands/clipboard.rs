@@ -3,7 +3,7 @@ use crate::db::{
     queries, DbPool,
 };
 use crate::clipboard as clip_util;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -38,6 +38,17 @@ pub async fn search_clipboard_items(
     let ct = content_type.as_deref();
 
     queries::search_items(&db.0, &query, ct, limit)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Get the thumbnail for a single clipboard item (lazy loading).
+#[tauri::command]
+pub async fn get_thumbnail(
+    db: State<'_, DbPool>,
+    id: String,
+) -> Result<Option<Vec<u8>>, String> {
+    queries::get_thumbnail(&db.0, &id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -250,6 +261,40 @@ pub async fn set_setting(
         .map_err(|e| e.to_string())
 }
 
+/// Unregister the current global shortcut (used during shortcut recording).
+#[tauri::command]
+pub async fn unregister_shortcut(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    app.global_shortcut().unregister_all().map_err(|e| e.to_string())
+}
+
+/// Re-register the global shortcut from DB settings.
+#[tauri::command]
+pub async fn register_shortcut(app: AppHandle, db: State<'_, DbPool>) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+
+    let shortcut = queries::get_setting(&db.0, "shortcut")
+        .await
+        .map_err(|e| e.to_string())?
+        .unwrap_or_else(|| "CommandOrControl+Shift+V".to_string());
+
+    // Unregister all existing shortcuts before registering new one
+    app.global_shortcut().unregister_all().map_err(|e| e.to_string())?;
+
+    let app_handle = app.clone();
+    app.global_shortcut()
+        .on_shortcut(shortcut.as_str(), move |_app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                if crate::platform::platform_is_visible(&app_handle) {
+                    crate::hide_main_window(&app_handle);
+                } else {
+                    crate::show_main_window(&app_handle);
+                }
+            }
+        })
+        .map_err(|e| e.to_string())
+}
+
 /// Clear all clipboard history (preserve favorites).
 #[tauri::command]
 pub async fn clear_history(
@@ -334,23 +379,22 @@ pub fn show_copy_hud(app: AppHandle) {
 /// Open the settings window.
 #[tauri::command]
 pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
-    // If settings window already exists, just show it
-    if let Some(window) = app.get_webview_window("settings") {
-        let _ = window.show();
-        let _ = window.set_focus();
-        return Ok(());
-    }
-
-    let url = tauri::WebviewUrl::App("index.html?page=settings".into());
-    tauri::WebviewWindowBuilder::new(&app, "settings", url)
-        .title("Recopy Settings")
-        .inner_size(560.0, 480.0)
-        .resizable(false)
-        .center()
-        .build()
-        .map_err(|e| format!("Failed to open settings window: {}", e))?;
-
+    crate::open_settings_window_impl(&app);
     Ok(())
+}
+
+/// Check if a file path has an image extension.
+fn is_image_file(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".png")
+        || lower.ends_with(".jpg")
+        || lower.ends_with(".jpeg")
+        || lower.ends_with(".gif")
+        || lower.ends_with(".webp")
+        || lower.ends_with(".bmp")
+        || lower.ends_with(".tiff")
+        || lower.ends_with(".tif")
+        || lower.ends_with(".ico")
 }
 
 /// Process and store a new clipboard entry from the monitoring system.
@@ -366,16 +410,21 @@ pub async fn process_clipboard_change(
     source_app: String,
     source_app_name: String,
 ) -> Result<Option<String>, String> {
-    // Size check
-    if clip_util::exceeds_size_limit(content.len()) {
-        log::info!("Clipboard content exceeds size limit ({}B), skipping", content.len());
+    let db = app.state::<DbPool>();
+
+    // Size check with dynamic limit from settings
+    let max_size_mb = queries::get_setting(&db.0, "max_item_size_mb")
+        .await
+        .unwrap_or(None)
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(clip_util::DEFAULT_MAX_ITEM_SIZE_MB);
+    if clip_util::exceeds_size_limit(content.len(), max_size_mb) {
+        log::info!("Clipboard content exceeds size limit ({}B > {}MB), skipping", content.len(), max_size_mb);
         return Ok(None);
     }
 
     // Compute hash for dedup
     let hash = clip_util::compute_hash(&content);
-
-    let db = app.state::<DbPool>();
 
     // Dedup check
     if let Some(existing_id) = queries::find_and_bump_by_hash(&db.0, &hash)
@@ -387,6 +436,7 @@ pub async fn process_clipboard_change(
     }
 
     // Process image: generate thumbnail and save original
+    // Note: For file-type images, thumbnail is generated asynchronously after insert (see below)
     let (thumbnail, image_path) = if content_type == ContentType::Image {
         let thumb = clip_util::generate_thumbnail(&content).ok();
         let app_data = app
@@ -399,6 +449,17 @@ pub async fn process_clipboard_change(
         (None, None)
     };
 
+    // For file items, use the actual file size instead of the path string length
+    let content_size = if content_type == ContentType::File {
+        file_path
+            .as_ref()
+            .and_then(|fp| std::fs::metadata(fp).ok())
+            .map(|m| m.len() as i64)
+            .unwrap_or(content.len() as i64)
+    } else {
+        content.len() as i64
+    };
+
     let new_item = NewClipboardItem {
         content_type,
         plain_text: plain_text.unwrap_or_default(),
@@ -409,7 +470,7 @@ pub async fn process_clipboard_change(
         file_name,
         source_app,
         source_app_name,
-        content_size: content.len() as i64,
+        content_size,
         content_hash: hash,
     };
 
@@ -418,5 +479,48 @@ pub async fn process_clipboard_change(
         .map_err(|e| e.to_string())?;
 
     log::info!("New clipboard item stored: {} ({})", id, new_item.content_type.as_str());
+
+    // Background: generate thumbnail for image files (non-blocking)
+    if new_item.content_type == ContentType::File {
+        if let Some(ref fp) = new_item.file_path {
+            if is_image_file(fp) {
+                let pool = db.0.clone();
+                let id_clone = id.clone();
+                let fp_clone = fp.clone();
+                let app_clone = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    let data = match tokio::fs::read(&fp_clone).await {
+                        Ok(d) => d,
+                        Err(e) => {
+                            log::warn!("Failed to read image file for thumbnail: {}", e);
+                            return;
+                        }
+                    };
+                    let thumb = match tokio::task::spawn_blocking(move || {
+                        clip_util::generate_thumbnail(&data)
+                    })
+                    .await
+                    {
+                        Ok(Ok(t)) => t,
+                        _ => {
+                            log::warn!("Failed to generate thumbnail for file");
+                            return;
+                        }
+                    };
+                    if let Err(e) = queries::update_thumbnail(&pool, &id_clone, &thumb).await {
+                        log::warn!("Failed to update thumbnail: {}", e);
+                        return;
+                    }
+                    // Notify frontend to refresh with the new thumbnail
+                    let _ = app_clone.emit(
+                        "clipboard-changed",
+                        serde_json::json!({ "id": id_clone }),
+                    );
+                    log::info!("Thumbnail generated for file item: {}", id_clone);
+                });
+            }
+        }
+    }
+
     Ok(Some(id))
 }

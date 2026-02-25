@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore, type Settings as AppSettings } from "../stores/settings-store";
 import {
   Settings,
@@ -12,6 +13,7 @@ import {
   Moon,
   Monitor,
   ChevronRight,
+  ChevronDown,
   Globe,
 } from "lucide-react";
 
@@ -36,24 +38,24 @@ export function SettingsPage() {
   }
 
   const tabs: { id: SettingsTab; i18nKey: string; icon: React.ReactNode }[] = [
-    { id: "general", i18nKey: "settings.tabs.general", icon: <Settings size={16} /> },
-    { id: "history", i18nKey: "settings.tabs.history", icon: <Clock size={16} /> },
-    { id: "privacy", i18nKey: "settings.tabs.privacy", icon: <Shield size={16} /> },
-    { id: "about", i18nKey: "settings.tabs.about", icon: <Info size={16} /> },
+    { id: "general", i18nKey: "settings.tabs.general", icon: <Settings size={15} /> },
+    { id: "history", i18nKey: "settings.tabs.history", icon: <Clock size={15} /> },
+    { id: "privacy", i18nKey: "settings.tabs.privacy", icon: <Shield size={15} /> },
+    { id: "about", i18nKey: "settings.tabs.about", icon: <Info size={15} /> },
   ];
 
   return (
     <div className="h-screen flex bg-background text-foreground font-sans select-none">
       {/* Sidebar */}
-      <div className="w-44 border-r border-border p-3 flex flex-col gap-1 shrink-0">
+      <div className="w-44 p-3 flex flex-col gap-0.5 shrink-0 border-r border-border/30">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
               activeTab === tab.id
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-white/10 text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
             }`}
           >
             {tab.icon}
@@ -87,58 +89,33 @@ function GeneralSettings({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">{t("settings.general.title")}</h2>
+    <div className="space-y-1">
+      <SectionTitle>{t("settings.general.title")}</SectionTitle>
 
-      {/* Theme */}
       <SettingRow label={t("settings.general.theme")} description={t("settings.general.themeDesc")}>
-        <div className="flex gap-2">
-          {([
-            { value: "dark", icon: <Moon size={14} />, i18nKey: "settings.general.dark" },
-            { value: "light", icon: <Sun size={14} />, i18nKey: "settings.general.light" },
-            { value: "system", icon: <Monitor size={14} />, i18nKey: "settings.general.system" },
-          ] as const).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => updateSetting("theme", opt.value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                settings.theme === opt.value
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {opt.icon}
-              {t(opt.i18nKey)}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          value={settings.theme}
+          options={[
+            { value: "dark", icon: <Moon size={13} />, label: t("settings.general.dark") },
+            { value: "light", icon: <Sun size={13} />, label: t("settings.general.light") },
+            { value: "system", icon: <Monitor size={13} />, label: t("settings.general.system") },
+          ]}
+          onChange={(v) => updateSetting("theme", v)}
+        />
       </SettingRow>
 
-      {/* Language */}
       <SettingRow label={t("settings.general.language")} description={t("settings.general.languageDesc")}>
-        <div className="flex gap-2">
-          {([
-            { value: "en", label: "English" },
-            { value: "zh", label: "中文" },
-            { value: "system", label: t("settings.general.system") },
-          ]).map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => updateSetting("language", opt.value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                settings.language === opt.value
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Globe size={12} />
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          value={settings.language}
+          options={[
+            { value: "en", icon: <Globe size={13} />, label: "English" },
+            { value: "zh", icon: <Globe size={13} />, label: "中文" },
+            { value: "system", icon: <Globe size={13} />, label: t("settings.general.system") },
+          ]}
+          onChange={(v) => updateSetting("language", v)}
+        />
       </SettingRow>
 
-      {/* Shortcut */}
       <SettingRow label={t("settings.general.shortcut")} description={t("settings.general.shortcutDesc")}>
         <ShortcutRecorder
           value={settings.shortcut}
@@ -146,7 +123,6 @@ function GeneralSettings({
         />
       </SettingRow>
 
-      {/* Auto Start */}
       <SettingRow label={t("settings.general.autoStart")} description={t("settings.general.autoStartDesc")}>
         <ToggleSwitch
           checked={settings.auto_start === "true"}
@@ -154,7 +130,6 @@ function GeneralSettings({
         />
       </SettingRow>
 
-      {/* Close on Blur */}
       <SettingRow label={t("settings.general.closeOnBlur")} description={t("settings.general.closeOnBlurDesc")}>
         <ToggleSwitch
           checked={settings.close_on_blur === "true"}
@@ -190,19 +165,22 @@ function HistorySettings({
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">{t("settings.history.title")}</h2>
+    <div className="space-y-1">
+      <SectionTitle>{t("settings.history.title")}</SectionTitle>
 
       <SettingRow label={t("settings.history.retention")} description={t("settings.history.retentionDesc")}>
-        <select
-          value={settings.retention_policy}
-          onChange={(e) => updateSetting("retention_policy", e.target.value)}
-          className="bg-muted text-foreground border border-border rounded-md px-3 py-1.5 text-sm cursor-pointer"
-        >
-          <option value="unlimited">{t("settings.history.unlimited")}</option>
-          <option value="days">{t("settings.history.keepDays")}</option>
-          <option value="count">{t("settings.history.keepCount")}</option>
-        </select>
+        <div className="relative">
+          <select
+            value={settings.retention_policy}
+            onChange={(e) => updateSetting("retention_policy", e.target.value)}
+            className="appearance-none bg-input/60 text-foreground border border-border/50 rounded-lg pl-3 pr-7 py-1.5 text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent hover:border-muted-foreground/40 transition-colors"
+          >
+            <option value="unlimited">{t("settings.history.unlimited")}</option>
+            <option value="days">{t("settings.history.keepDays")}</option>
+            <option value="count">{t("settings.history.keepCount")}</option>
+          </select>
+          <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
       </SettingRow>
 
       {settings.retention_policy === "days" && (
@@ -213,7 +191,7 @@ function HistorySettings({
             max="365"
             value={settings.retention_days}
             onChange={(e) => updateSetting("retention_days", e.target.value)}
-            className="bg-muted text-foreground border border-border rounded-md px-3 py-1.5 text-sm w-20"
+            className="bg-input/60 text-foreground border border-border/50 rounded-lg px-3 py-1.5 text-sm w-20 focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </SettingRow>
       )}
@@ -226,32 +204,37 @@ function HistorySettings({
             max="100000"
             value={settings.retention_count}
             onChange={(e) => updateSetting("retention_count", e.target.value)}
-            className="bg-muted text-foreground border border-border rounded-md px-3 py-1.5 text-sm w-24"
+            className="bg-input/60 text-foreground border border-border/50 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </SettingRow>
       )}
 
       <SettingRow label={t("settings.history.maxSize")} description={t("settings.history.maxSizeDesc")}>
-        <input
-          type="number"
-          min="1"
-          max="100"
-          value={settings.max_item_size_mb}
-          onChange={(e) => updateSetting("max_item_size_mb", e.target.value)}
-          className="bg-muted text-foreground border border-border rounded-md px-3 py-1.5 text-sm w-20"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={settings.max_item_size_mb}
+            onChange={(e) => updateSetting("max_item_size_mb", e.target.value)}
+            className="bg-input/60 text-foreground border border-border/50 rounded-lg px-3 py-1.5 text-sm w-20 focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+          <span className="text-xs text-muted-foreground">MB</span>
+        </div>
       </SettingRow>
 
       <SettingRow label={t("settings.history.clear")} description={t("settings.history.clearDesc")}>
         <button
           onClick={handleClear}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
             confirmClear
               ? "bg-destructive text-white"
-              : "bg-muted text-destructive hover:bg-destructive/10"
+              : cleared !== null
+                ? "bg-white/10 text-foreground"
+                : "bg-white/5 text-destructive hover:bg-destructive/10"
           }`}
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} />
           {confirmClear
             ? t("settings.history.confirmClear")
             : cleared !== null
@@ -267,12 +250,12 @@ function PrivacySettings() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">{t("settings.privacy.title")}</h2>
+    <div className="space-y-1">
+      <SectionTitle>{t("settings.privacy.title")}</SectionTitle>
 
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+      <div className="rounded-lg border border-border/50 bg-card/60 p-4 space-y-3">
         <h3 className="text-sm font-medium flex items-center gap-2">
-          <Shield size={16} className="text-accent" />
+          <Shield size={15} className="text-accent" />
           {t("settings.privacy.accessibility")}
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
@@ -285,7 +268,7 @@ function PrivacySettings() {
       </div>
 
       <SettingRow label={t("settings.privacy.exclusionList")} description={t("settings.privacy.exclusionListDesc")}>
-        <span className="text-xs text-muted-foreground">{t("settings.privacy.comingSoon")}</span>
+        <span className="text-xs text-muted-foreground/60 px-2 py-1 rounded-md bg-white/5">{t("settings.privacy.comingSoon")}</span>
       </SettingRow>
     </div>
   );
@@ -295,40 +278,42 @@ function AboutSettings() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">{t("settings.about.title")}</h2>
+    <div className="space-y-5">
+      <SectionTitle>{t("settings.about.title")}</SectionTitle>
 
-      <div className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-4 text-center space-y-2">
-          <h3 className="text-xl font-bold">{t("app.name")}</h3>
-          <p className="text-sm text-muted-foreground">{t("app.version", { version: "0.1.0" })}</p>
-          <p className="text-xs text-muted-foreground">{t("app.description")}</p>
-        </div>
+      <div className="rounded-lg border border-border/50 bg-card/60 p-5 text-center space-y-2">
+        <h3 className="text-xl font-bold">{t("app.name")}</h3>
+        <p className="text-sm text-muted-foreground">{t("app.version", { version: "0.1.0" })}</p>
+        <p className="text-xs text-muted-foreground/80">{t("app.description")}</p>
+      </div>
 
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between py-1.5 border-b border-border">
-            <span className="text-muted-foreground">{t("settings.about.license")}</span>
-            <span>MIT</span>
+      <div className="rounded-lg border border-border/50 bg-card/60 overflow-hidden">
+        {[
+          { label: t("settings.about.license"), value: "MIT" },
+          { label: t("settings.about.framework"), value: "Tauri v2" },
+          { label: t("settings.about.frontend"), value: "React + TypeScript" },
+          { label: t("settings.about.database"), value: "SQLite (sqlx)" },
+        ].map((item, i, arr) => (
+          <div
+            key={item.label}
+            className={`flex justify-between px-4 py-2.5 text-sm ${
+              i < arr.length - 1 ? "border-b border-border/30" : ""
+            }`}
+          >
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="text-foreground">{item.value}</span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-border">
-            <span className="text-muted-foreground">{t("settings.about.framework")}</span>
-            <span>Tauri v2</span>
-          </div>
-          <div className="flex justify-between py-1.5 border-b border-border">
-            <span className="text-muted-foreground">{t("settings.about.frontend")}</span>
-            <span>React + TypeScript</span>
-          </div>
-          <div className="flex justify-between py-1.5">
-            <span className="text-muted-foreground">{t("settings.about.database")}</span>
-            <span>SQLite (sqlx)</span>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
 }
 
 // --- Shared UI components ---
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-base font-semibold mb-3">{children}</h2>;
+}
 
 function SettingRow({
   label,
@@ -340,12 +325,41 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between py-2">
-      <div className="space-y-0.5">
+    <div className="flex items-center justify-between py-3 border-b border-border/20">
+      <div className="space-y-0.5 pr-4">
         <div className="text-sm font-medium">{label}</div>
-        <div className="text-xs text-muted-foreground">{description}</div>
+        <div className="text-xs text-muted-foreground/80">{description}</div>
       </div>
-      <div className="shrink-0 ml-4">{children}</div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
+
+function SegmentedControl({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: { value: string; icon: React.ReactNode; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex gap-1 p-0.5 rounded-lg bg-white/5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+            value === opt.value
+              ? "bg-white/10 text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {opt.icon}
+          {opt.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -360,13 +374,13 @@ function ToggleSwitch({
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
-        checked ? "bg-accent" : "bg-muted-foreground/30"
+      className={`relative w-10 h-[22px] rounded-full transition-colors cursor-pointer ${
+        checked ? "bg-accent" : "bg-muted-foreground/20"
       }`}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-          checked ? "translate-x-5" : ""
+        className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
+          checked ? "translate-x-[18px]" : ""
         }`}
       />
     </button>
@@ -391,9 +405,18 @@ function ShortcutRecorder({
   useEffect(() => {
     if (!recording) return;
 
+    // Unregister global shortcut so it doesn't intercept key events
+    invoke("unregister_shortcut");
+
     const handler = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Escape to cancel recording
+      if (e.key === "Escape") {
+        setRecording(false);
+        return;
+      }
 
       const parts: string[] = [];
       if (e.metaKey || e.ctrlKey) parts.push("CommandOrControl");
@@ -411,7 +434,11 @@ function ShortcutRecorder({
     };
 
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      // Re-register global shortcut from DB settings
+      invoke("register_shortcut");
+    };
   }, [recording, onChange]);
 
   const formatShortcut = (s: string) =>
@@ -424,10 +451,10 @@ function ShortcutRecorder({
   return (
     <button
       onClick={() => setRecording(!recording)}
-      className={`px-3 py-1.5 rounded-md text-xs border transition-colors cursor-pointer min-w-28 text-center ${
+      className={`px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer min-w-28 text-center ${
         recording
-          ? "border-accent bg-accent/10 text-accent animate-pulse"
-          : "border-border bg-muted text-foreground hover:border-muted-foreground"
+          ? "bg-accent/15 text-accent ring-1 ring-accent animate-pulse"
+          : "bg-input/60 text-foreground border border-border/50 hover:border-muted-foreground/40"
       }`}
     >
       <Keyboard size={12} className="inline mr-1.5" />

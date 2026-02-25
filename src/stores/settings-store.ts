@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { enable as enableAutostart, disable as disableAutostart } from "@tauri-apps/plugin-autostart";
 import i18n from "../i18n";
 
 export type Theme = "dark" | "light" | "system";
@@ -106,6 +107,17 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       if (key === "language") {
         applyLanguage(value);
       }
+      if (key === "auto_start") {
+        try {
+          if (value === "true") {
+            await enableAutostart();
+          } else {
+            await disableAutostart();
+          }
+        } catch (err) {
+          console.error("Failed to toggle autostart:", err);
+        }
+      }
     } catch (e) {
       console.error("Failed to update setting:", e);
     }
@@ -142,4 +154,12 @@ if (typeof window !== "undefined") {
         applyTheme("system");
       }
     });
+
+  // Listen for system language changes when language is "system"
+  window.addEventListener("languagechange", () => {
+    const { settings } = useSettingsStore.getState();
+    if (settings.language === "system") {
+      applyLanguage("system");
+    }
+  });
 }

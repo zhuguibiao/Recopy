@@ -58,6 +58,7 @@ pub async fn find_and_bump_by_hash(pool: &SqlitePool, hash: &str) -> Result<Opti
 }
 
 /// Get clipboard items with optional type filter, ordered by updated_at desc.
+/// Excludes thumbnail blobs for fast IPC transfer.
 pub async fn get_items(
     pool: &SqlitePool,
     content_type: Option<&str>,
@@ -65,8 +66,8 @@ pub async fn get_items(
     offset: i64,
 ) -> Result<Vec<ClipboardItem>, sqlx::Error> {
     let items = if let Some(ct) = content_type {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items WHERE content_type = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
         )
         .bind(ct)
@@ -75,8 +76,8 @@ pub async fn get_items(
         .fetch_all(pool)
         .await?
     } else {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items ORDER BY updated_at DESC LIMIT ? OFFSET ?",
         )
         .bind(limit)
@@ -91,17 +92,17 @@ pub async fn get_items(
             id: r.0,
             content_type: r.1,
             plain_text: r.2,
-            thumbnail: r.3,
-            image_path: r.4,
-            file_path: r.5,
-            file_name: r.6,
-            source_app: r.7,
-            source_app_name: r.8,
-            content_size: r.9,
-            content_hash: r.10,
-            is_favorited: r.11,
-            created_at: r.12,
-            updated_at: r.13,
+            thumbnail: None,
+            image_path: r.3,
+            file_path: r.4,
+            file_name: r.5,
+            source_app: r.6,
+            source_app_name: r.7,
+            content_size: r.8,
+            content_hash: r.9,
+            is_favorited: r.10,
+            created_at: r.11,
+            updated_at: r.12,
         })
         .collect())
 }
@@ -132,6 +133,7 @@ pub async fn delete_item(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error>
 }
 
 /// Search clipboard items using FTS5 trigram.
+/// Excludes thumbnail blobs for fast IPC transfer.
 pub async fn search_items(
     pool: &SqlitePool,
     query: &str,
@@ -163,19 +165,19 @@ pub async fn search_items(
 
     let sql = if let Some(ct) = content_type {
         format!(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items WHERE id IN ({}) AND content_type = '{}' ORDER BY updated_at DESC",
             placeholders, ct
         )
     } else {
         format!(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items WHERE id IN ({}) ORDER BY updated_at DESC",
             placeholders
         )
     };
 
-    let mut q = sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(&sql);
+    let mut q = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(&sql);
     for id in &ids {
         q = q.bind(id);
     }
@@ -188,22 +190,23 @@ pub async fn search_items(
             id: r.0,
             content_type: r.1,
             plain_text: r.2,
-            thumbnail: r.3,
-            image_path: r.4,
-            file_path: r.5,
-            file_name: r.6,
-            source_app: r.7,
-            source_app_name: r.8,
-            content_size: r.9,
-            content_hash: r.10,
-            is_favorited: r.11,
-            created_at: r.12,
-            updated_at: r.13,
+            thumbnail: None,
+            image_path: r.3,
+            file_path: r.4,
+            file_name: r.5,
+            source_app: r.6,
+            source_app_name: r.7,
+            content_size: r.8,
+            content_hash: r.9,
+            is_favorited: r.10,
+            created_at: r.11,
+            updated_at: r.12,
         })
         .collect())
 }
 
 /// Fallback search using LIKE for queries shorter than 3 chars.
+/// Excludes thumbnail blobs for fast IPC transfer.
 async fn search_items_like(
     pool: &SqlitePool,
     query: &str,
@@ -213,8 +216,8 @@ async fn search_items_like(
     let like_pattern = format!("%{}%", query);
 
     let items = if let Some(ct) = content_type {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items WHERE (plain_text LIKE ? OR file_name LIKE ? OR source_app_name LIKE ?) AND content_type = ? ORDER BY updated_at DESC LIMIT ?",
         )
         .bind(&like_pattern)
@@ -225,8 +228,8 @@ async fn search_items_like(
         .fetch_all(pool)
         .await?
     } else {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
-            "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(
+            "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
              FROM clipboard_items WHERE (plain_text LIKE ? OR file_name LIKE ? OR source_app_name LIKE ?) ORDER BY updated_at DESC LIMIT ?",
         )
         .bind(&like_pattern)
@@ -243,39 +246,61 @@ async fn search_items_like(
             id: r.0,
             content_type: r.1,
             plain_text: r.2,
-            thumbnail: r.3,
-            image_path: r.4,
-            file_path: r.5,
-            file_name: r.6,
-            source_app: r.7,
-            source_app_name: r.8,
-            content_size: r.9,
-            content_hash: r.10,
-            is_favorited: r.11,
-            created_at: r.12,
-            updated_at: r.13,
+            thumbnail: None,
+            image_path: r.3,
+            file_path: r.4,
+            file_name: r.5,
+            source_app: r.6,
+            source_app_name: r.7,
+            content_size: r.8,
+            content_hash: r.9,
+            is_favorited: r.10,
+            created_at: r.11,
+            updated_at: r.12,
         })
         .collect())
+}
+
+/// Get the thumbnail blob for a single item.
+pub async fn get_thumbnail(pool: &SqlitePool, id: &str) -> Result<Option<Vec<u8>>, sqlx::Error> {
+    let row: Option<(Option<Vec<u8>>,)> = sqlx::query_as(
+        "SELECT thumbnail FROM clipboard_items WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.and_then(|r| r.0))
+}
+
+/// Update the thumbnail for an existing clipboard item.
+pub async fn update_thumbnail(pool: &SqlitePool, id: &str, thumbnail: &[u8]) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE clipboard_items SET thumbnail = ? WHERE id = ?")
+        .bind(thumbnail)
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 // ---- Favorites ----
 
 /// Get all favorited items, optionally filtered by content type.
+/// Excludes thumbnail blobs for fast IPC transfer.
 pub async fn get_favorited_items(pool: &SqlitePool, content_type: Option<&str>, limit: i64, offset: i64) -> Result<Vec<super::models::ClipboardItem>, sqlx::Error> {
     let sql = if content_type.is_some() {
-        "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
          FROM clipboard_items WHERE is_favorited = 1 AND content_type = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?"
     } else {
-        "SELECT id, content_type, plain_text, thumbnail, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
+        "SELECT id, content_type, plain_text, image_path, file_path, file_name, source_app, source_app_name, content_size, content_hash, is_favorited, created_at, updated_at
          FROM clipboard_items WHERE is_favorited = 1 ORDER BY updated_at DESC LIMIT ? OFFSET ?"
     };
 
     let items = if let Some(ct) = content_type {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(sql)
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(sql)
             .bind(ct).bind(limit).bind(offset)
             .fetch_all(pool).await?
     } else {
-        sqlx::query_as::<_, (String, String, String, Option<Vec<u8>>, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(sql)
+        sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, String, String, i64, String, bool, String, String)>(sql)
             .bind(limit).bind(offset)
             .fetch_all(pool).await?
     };
@@ -283,10 +308,10 @@ pub async fn get_favorited_items(pool: &SqlitePool, content_type: Option<&str>, 
     Ok(items
         .into_iter()
         .map(|r| super::models::ClipboardItem {
-            id: r.0, content_type: r.1, plain_text: r.2, thumbnail: r.3,
-            image_path: r.4, file_path: r.5, file_name: r.6,
-            source_app: r.7, source_app_name: r.8, content_size: r.9,
-            content_hash: r.10, is_favorited: r.11, created_at: r.12, updated_at: r.13,
+            id: r.0, content_type: r.1, plain_text: r.2, thumbnail: None,
+            image_path: r.3, file_path: r.4, file_name: r.5,
+            source_app: r.6, source_app_name: r.7, content_size: r.8,
+            content_hash: r.9, is_favorited: r.10, created_at: r.11, updated_at: r.12,
         })
         .collect())
 }
