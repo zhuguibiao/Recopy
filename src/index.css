@@ -29,22 +29,22 @@ html {
   --color-selected: rgba(59, 130, 246, 0.10);
 }
 
-/* Light theme overrides */
+/* Light theme — zinc scale mirrored from dark mode */
 html[data-theme="light"] {
   --color-overlay: rgba(0, 0, 0, 0.06);
   --color-overlay-hover: rgba(0, 0, 0, 0.03);
-  --color-selected: rgba(37, 99, 235, 0.18);
-  --color-background: #FFFFFF;
-  --color-foreground: #09090B;
-  --color-card: #F4F4F5;
-  --color-card-foreground: #09090B;
-  --color-border: #D4D4D8;
-  --color-muted: #F4F4F5;
-  --color-muted-foreground: #18181B;
-  --color-accent: #2563EB;
+  --color-selected: rgba(37, 99, 235, 0.15);
+  --color-background: #FAFAFA;          /* zinc-50  ← mirror of zinc-950 */
+  --color-foreground: #09090B;          /* zinc-950 ← mirror of zinc-50 */
+  --color-card: #F4F4F5;               /* zinc-100 ← mirror of zinc-900 */
+  --color-card-foreground: #09090B;     /* zinc-950 */
+  --color-border: #E4E4E7;             /* zinc-200 ← mirror of zinc-800 */
+  --color-muted: #E4E4E7;              /* zinc-200 ← mirror of zinc-800 */
+  --color-muted-foreground: #52525B;    /* zinc-600 ← mirror of zinc-400 */
+  --color-accent: #2563EB;             /* blue-600 (1 step darker for light bg) */
   --color-accent-foreground: #FFFFFF;
   --color-destructive: #DC2626;
-  --color-input: #D4D4D8;
+  --color-input: #E4E4E7;              /* zinc-200 ← mirror of zinc-800 */
   --color-ring: #2563EB;
 }
 
