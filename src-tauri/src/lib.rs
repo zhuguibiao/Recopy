@@ -162,7 +162,11 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .item(&quit)
         .build()?;
 
-    let icon_bytes = include_bytes!("../icons/tray-icon.png");
+    let icon_bytes = if cfg!(target_os = "macos") {
+        include_bytes!("../icons/tray-icon.png").as_slice()
+    } else {
+        include_bytes!("../icons/tray-icon-win.png").as_slice()
+    };
     let icon = tauri::image::Image::from_bytes(icon_bytes)?;
 
     let _tray = TrayIconBuilder::new()
