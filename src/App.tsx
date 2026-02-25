@@ -10,7 +10,7 @@ import { ViewTabs } from "./components/ViewTabs";
 import { ClipboardList } from "./components/ClipboardList";
 import { SettingsPage } from "./components/SettingsPage";
 import { useClipboardStore } from "./stores/clipboard-store";
-import { useSettingsStore } from "./stores/settings-store";
+import { useSettingsStore, type ShowEventPayload } from "./stores/settings-store";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 
 // Detect page type from URL params
@@ -23,6 +23,7 @@ function MainApp() {
   const refreshOnChange = useClipboardStore((s) => s.refreshOnChange);
   const onPanelShow = useClipboardStore((s) => s.onPanelShow);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
+  const syncSettingsFromEvent = useSettingsStore((s) => s.syncSettingsFromEvent);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation
@@ -65,10 +66,11 @@ function MainApp() {
   }, []);
 
   // Listen for show event to replay slide-up animation and refresh data.
+  // Payload carries settings (theme, language) read by Rust from DB — no extra IPC needed.
   useEffect(() => {
-    const unlisten = listen("recopy-show", () => {
+    const unlisten = listen<ShowEventPayload>("recopy-show", (event) => {
       void onPanelShow();
-      loadSettings(); // Re-read settings (theme, language) in case changed from settings window
+      syncSettingsFromEvent(event.payload);
 
       const el = panelRef.current;
       if (el) {
@@ -80,7 +82,7 @@ function MainApp() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [onPanelShow]);
+  }, [onPanelShow, syncSettingsFromEvent]);
 
   return (
     <div className="h-screen w-screen flex flex-col">

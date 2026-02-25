@@ -29,12 +29,18 @@ const DEFAULT_SETTINGS: Settings = {
   close_on_blur: "true",
 };
 
+export interface ShowEventPayload {
+  theme?: string;
+  language?: string;
+}
+
 interface SettingsState {
   settings: Settings;
   loaded: boolean;
 
   loadSettings: () => Promise<void>;
   updateSetting: (key: keyof Settings, value: string) => Promise<void>;
+  syncSettingsFromEvent: (payload: ShowEventPayload) => void;
   clearHistory: () => Promise<number>;
   runRetentionCleanup: () => Promise<number>;
 }
@@ -120,6 +126,22 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       }
     } catch (e) {
       console.error("Failed to update setting:", e);
+    }
+  },
+
+  syncSettingsFromEvent: (payload: ShowEventPayload) => {
+    const { theme, language } = payload;
+    if (theme) {
+      applyTheme(theme as Theme);
+      set((state) => ({
+        settings: { ...state.settings, theme: theme as Theme },
+      }));
+    }
+    if (language) {
+      applyLanguage(language);
+      set((state) => ({
+        settings: { ...state.settings, language },
+      }));
     }
   },
 
