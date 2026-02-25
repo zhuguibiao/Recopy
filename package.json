@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "packageManager": "pnpm@10.26.1",
   "pnpm": {
     "onlyBuiltDependencies": [
