@@ -44,17 +44,13 @@ pub async fn insert_item(pool: &SqlitePool, item: &NewClipboardItem) -> Result<S
 /// If so, bump its updated_at and return its id.
 pub async fn find_and_bump_by_hash(pool: &SqlitePool, hash: &str) -> Result<Option<String>, sqlx::Error> {
     let row: Option<(String,)> = sqlx::query_as(
-        "SELECT id FROM clipboard_items WHERE content_hash = ?",
+        "UPDATE clipboard_items SET updated_at = datetime('now') WHERE content_hash = ? RETURNING id",
     )
     .bind(hash)
     .fetch_optional(pool)
     .await?;
 
-    if let Some((id,)) = row {
-        Ok(Some(id))
-    } else {
-        Ok(None)
-    }
+    Ok(row.map(|(id,)| id))
 }
 
 /// Get clipboard items with optional type filter, ordered by updated_at desc.
@@ -513,6 +509,60 @@ mod tests {
         // Second insert should be caught by dedup
         let existing = find_and_bump_by_hash(&pool, "same-hash").await.unwrap();
         assert_eq!(existing, Some(id1));
+    }
+
+    #[tokio::test]
+    async fn test_dedup_bumps_updated_at() {
+        let pool = test_pool().await;
+
+        let item = NewClipboardItem {
+            content_type: ContentType::PlainText,
+            plain_text: "Bump test".into(),
+            rich_content: None,
+            thumbnail: None,
+            image_path: None,
+            file_path: None,
+            file_name: None,
+            source_app: "".into(),
+            source_app_name: "".into(),
+            content_size: 9,
+            content_hash: "bump-hash".into(),
+        };
+
+        let id = insert_item(&pool, &item).await.unwrap();
+
+        // Force updated_at to a known old date so we can detect the bump
+        sqlx::query("UPDATE clipboard_items SET updated_at = '2000-01-01 00:00:00' WHERE id = ?")
+            .bind(&id)
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let original_updated_at: (String,) = sqlx::query_as(
+            "SELECT updated_at FROM clipboard_items WHERE id = ?",
+        )
+        .bind(&id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(original_updated_at.0, "2000-01-01 00:00:00");
+
+        // Bump should update updated_at to current time
+        let bumped = find_and_bump_by_hash(&pool, "bump-hash").await.unwrap();
+        assert_eq!(bumped, Some(id.clone()));
+
+        let new_updated_at: (String,) = sqlx::query_as(
+            "SELECT updated_at FROM clipboard_items WHERE id = ?",
+        )
+        .bind(&id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(
+            new_updated_at.0.as_str() > "2000-01-01 00:00:00",
+            "updated_at should have been bumped from the old date, got: {}",
+            new_updated_at.0
+        );
     }
 
     #[tokio::test]
