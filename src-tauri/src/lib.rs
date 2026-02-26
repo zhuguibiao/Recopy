@@ -83,6 +83,12 @@ pub fn run() {
             let app_handle = app.handle().clone();
             start_clipboard_monitor(app_handle);
 
+            // Cleanup orphan image files left from previous sessions (best-effort)
+            let app_handle_gc = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                commands::clipboard::cleanup_orphan_images(&app_handle_gc).await;
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())

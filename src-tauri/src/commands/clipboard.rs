@@ -53,15 +53,31 @@ pub async fn get_thumbnail(
         .map_err(|e| e.to_string())
 }
 
-/// Delete a clipboard item.
+/// Delete a clipboard item and remove its original image file if present.
 #[tauri::command]
 pub async fn delete_clipboard_item(
     db: State<'_, DbPool>,
     id: String,
 ) -> Result<(), String> {
+    // Capture image_path before deleting the DB row
+    let image_path = queries::get_image_path_by_id(&db.0, &id)
+        .await
+        .map_err(|e| e.to_string())?;
+
     queries::delete_item(&db.0, &id)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Async file removal — best-effort, does not fail the command
+    if let Some(path) = image_path {
+        tokio::spawn(async move {
+            if let Err(e) = tokio::fs::remove_file(&path).await {
+                log::warn!("Failed to delete image file {}: {}", path, e);
+            }
+        });
+    }
+
+    Ok(())
 }
 
 /// Paste a clipboard item: write to system clipboard, optionally simulate Cmd+V.
@@ -303,17 +319,35 @@ pub async fn register_shortcut(app: AppHandle, db: State<'_, DbPool>) -> Result<
         .map_err(|e| e.to_string())
 }
 
-/// Clear all clipboard history (preserve favorites).
+/// Clear all clipboard history (preserve favorites), removing image files from disk.
 #[tauri::command]
 pub async fn clear_history(
     db: State<'_, DbPool>,
 ) -> Result<i64, String> {
-    queries::clear_history(&db.0)
+    // Collect image paths before deleting rows
+    let image_paths = queries::get_non_favorited_image_paths(&db.0)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    let count = queries::clear_history(&db.0)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Async file removal — best-effort
+    if !image_paths.is_empty() {
+        tokio::spawn(async move {
+            for path in image_paths {
+                if let Err(e) = tokio::fs::remove_file(&path).await {
+                    log::warn!("Failed to delete image file {}: {}", path, e);
+                }
+            }
+        });
+    }
+
+    Ok(count)
 }
 
-/// Run retention cleanup based on current settings.
+/// Run retention cleanup based on current settings, removing image files from disk.
 #[tauri::command]
 pub async fn run_retention_cleanup(
     db: State<'_, DbPool>,
@@ -335,9 +369,94 @@ pub async fn run_retention_cleanup(
         .and_then(|v| v.parse::<i64>().ok())
         .unwrap_or(0);
 
-    queries::cleanup_by_retention(&db.0, &policy, days, count)
+    // Collect image paths before deleting rows
+    let image_paths = queries::get_retention_overflow_image_paths(&db.0, &policy, days, count)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    let deleted = queries::cleanup_by_retention(&db.0, &policy, days, count)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Async file removal — best-effort
+    if !image_paths.is_empty() {
+        tokio::spawn(async move {
+            for path in image_paths {
+                if let Err(e) = tokio::fs::remove_file(&path).await {
+                    log::warn!("Failed to delete image file {}: {}", path, e);
+                }
+            }
+        });
+    }
+
+    Ok(deleted)
+}
+
+/// Scan for orphan image files on disk not referenced in the DB and delete them.
+/// Called once at startup as a best-effort GC; errors are only logged, never fatal.
+pub async fn cleanup_orphan_images(app: &AppHandle) {
+    let app_data_dir = match app.path().app_data_dir() {
+        Ok(d) => d,
+        Err(e) => {
+            log::warn!("cleanup_orphan_images: could not get app_data_dir: {}", e);
+            return;
+        }
+    };
+
+    let pool = match app.try_state::<crate::db::DbPool>() {
+        Some(p) => p,
+        None => return,
+    };
+
+    let known_paths: std::collections::HashSet<String> =
+        match queries::get_all_image_paths(&pool.0).await {
+            Ok(paths) => paths.into_iter().collect(),
+            Err(e) => {
+                log::warn!("cleanup_orphan_images: failed to query DB: {}", e);
+                return;
+            }
+        };
+
+    let images_dir = app_data_dir.join("images");
+    if !images_dir.exists() {
+        return;
+    }
+
+    // Walk `images/{YYYY-MM}/` subdirectories
+    let month_dirs = match std::fs::read_dir(&images_dir) {
+        Ok(d) => d,
+        Err(e) => {
+            log::warn!("cleanup_orphan_images: cannot read images dir: {}", e);
+            return;
+        }
+    };
+
+    let mut orphan_count = 0u32;
+    for month_entry in month_dirs.flatten() {
+        let month_path = month_entry.path();
+        if !month_path.is_dir() {
+            continue;
+        }
+        let files = match std::fs::read_dir(&month_path) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+        for file_entry in files.flatten() {
+            let file_path = file_entry.path();
+            let path_str = file_path.to_string_lossy().to_string();
+            if !known_paths.contains(&path_str) {
+                if let Err(e) = std::fs::remove_file(&file_path) {
+                    log::warn!("cleanup_orphan_images: failed to remove {}: {}", path_str, e);
+                } else {
+                    orphan_count += 1;
+                }
+            }
+        }
+    }
+
+    if orphan_count > 0 {
+        log::info!("cleanup_orphan_images: removed {} orphan file(s)", orphan_count);
+    }
 }
 
 /// Hide the main window (works with NSPanel on macOS).

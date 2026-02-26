@@ -113,6 +113,81 @@ pub async fn get_item_by_id(pool: &SqlitePool, id: &str) -> Result<Option<(Strin
     .await
 }
 
+/// Return the image_path of a single item (None if not an image or not found).
+pub async fn get_image_path_by_id(pool: &SqlitePool, id: &str) -> Result<Option<String>, sqlx::Error> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT image_path FROM clipboard_items WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.and_then(|(p,)| p))
+}
+
+/// Return all non-null image_paths for non-favorited items (used before clear_history).
+pub async fn get_non_favorited_image_paths(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as(
+        "SELECT image_path FROM clipboard_items WHERE is_favorited = 0 AND image_path IS NOT NULL",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(p,)| p).collect())
+}
+
+/// Return image_paths for items that would be removed by the given retention policy.
+pub async fn get_retention_overflow_image_paths(
+    pool: &SqlitePool,
+    policy: &str,
+    days: i64,
+    count: i64,
+) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = match policy {
+        "days" if days > 0 => {
+            sqlx::query_as(
+                "SELECT image_path FROM clipboard_items
+                 WHERE is_favorited = 0
+                   AND created_at < datetime('now', ? || ' days')
+                   AND image_path IS NOT NULL",
+            )
+            .bind(format!("-{}", days))
+            .fetch_all(pool)
+            .await?
+        }
+        "count" if count > 0 => {
+            sqlx::query_as(
+                "SELECT image_path FROM clipboard_items
+                 WHERE is_favorited = 0
+                   AND id NOT IN (
+                       SELECT id FROM clipboard_items
+                       WHERE is_favorited = 0
+                       ORDER BY updated_at DESC
+                       LIMIT ?
+                   )
+                   AND image_path IS NOT NULL",
+            )
+            .bind(count)
+            .fetch_all(pool)
+            .await?
+        }
+        _ => vec![],
+    };
+
+    Ok(rows.into_iter().map(|(p,)| p).collect())
+}
+
+/// Return all non-null image_paths currently referenced in the database.
+pub async fn get_all_image_paths(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as(
+        "SELECT image_path FROM clipboard_items WHERE image_path IS NOT NULL",
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(p,)| p).collect())
+}
+
 /// Delete a clipboard item and its FTS entry.
 pub async fn delete_item(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
     sqlx::query("DELETE FROM clipboard_fts WHERE item_id = ?")
