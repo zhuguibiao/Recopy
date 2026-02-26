@@ -92,7 +92,7 @@ function MainApp() {
         className="panel-idle w-full h-full text-foreground flex flex-col font-sans overflow-hidden"
       >
         {/* Header — single row, centered */}
-        <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0" data-tauri-drag-region>
+        <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
           <span className="absolute left-4 text-sm font-semibold text-foreground/80 tracking-tight">Recopy</span>
           <ViewTabs />
           <SearchBar />
