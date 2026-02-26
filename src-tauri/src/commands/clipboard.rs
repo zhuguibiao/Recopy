@@ -562,27 +562,34 @@ pub async fn process_clipboard_change(
         return Ok(Some(existing_id));
     }
 
-    // Process image: generate thumbnail and save original
+    // Process image: generate thumbnail and save original (off the async runtime)
     // Note: For file-type images, thumbnail is generated asynchronously after insert (see below)
     let (thumbnail, image_path) = if content_type == ContentType::Image {
-        let thumb = clip_util::generate_thumbnail(&content).ok();
         let app_data = app
             .path()
             .app_data_dir()
             .map_err(|e| e.to_string())?;
-        let path = clip_util::save_original_image(&app_data, &content, "png").ok();
-        (thumb, path)
+        let content_for_img = content.clone();
+        tokio::task::spawn_blocking(move || {
+            let thumb = clip_util::generate_thumbnail(&content_for_img).ok();
+            let path = clip_util::save_original_image(&app_data, &content_for_img, "png").ok();
+            (thumb, path)
+        })
+        .await
+        .unwrap_or((None, None))
     } else {
         (None, None)
     };
 
     // For file items, use the actual file size instead of the path string length
     let content_size = if content_type == ContentType::File {
-        file_path
-            .as_ref()
-            .and_then(|fp| std::fs::metadata(fp).ok())
-            .map(|m| m.len() as i64)
-            .unwrap_or(content.len() as i64)
+        match &file_path {
+            Some(fp) => tokio::fs::metadata(fp)
+                .await
+                .map(|m| m.len() as i64)
+                .unwrap_or(content.len() as i64),
+            None => content.len() as i64,
+        }
     } else {
         content.len() as i64
     };

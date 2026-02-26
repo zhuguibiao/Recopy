@@ -383,6 +383,17 @@ fn setup_blur_hide(app: &tauri::AppHandle) {
 fn start_clipboard_monitor(app: tauri::AppHandle) {
     let app_clone = app.clone();
 
+    // Bounded channel: listener only enqueues, worker processes sequentially
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<()>(32);
+
+    // Single worker — processes clipboard events one at a time
+    let app_worker = app_clone.clone();
+    tauri::async_runtime::spawn(async move {
+        while rx.recv().await.is_some() {
+            handle_clipboard_event(&app_worker).await;
+        }
+    });
+
     tauri::async_runtime::spawn(async move {
         // Start the clipboard watcher via the plugin's command
         if let Err(e) = tauri_plugin_clipboard_x::start_listening(app_clone.clone()).await {
@@ -391,15 +402,12 @@ fn start_clipboard_monitor(app: tauri::AppHandle) {
         }
         log::info!("Clipboard monitor started");
 
-        // Listen for clipboard change events
-        let app_for_listener = app_clone.clone();
+        // Listen for clipboard change events — enqueue, never spawn
         app_clone.listen(
             "plugin:clipboard-x://clipboard_changed",
             move |_event: tauri::Event| {
-                let app_inner = app_for_listener.clone();
-                tauri::async_runtime::spawn(async move {
-                    handle_clipboard_event(&app_inner).await;
-                });
+                // try_send: drops event if channel is full (backpressure)
+                let _ = tx.try_send(());
             },
         );
     });
@@ -472,7 +480,7 @@ async fn extract_clipboard_content(
                 }
 
                 // Skip files larger than size limit
-                if let Ok(meta) = path.metadata() {
+                if let Ok(meta) = tokio::fs::metadata(path).await {
                     if clipboard::exceeds_size_limit(meta.len() as usize, max_size_mb) {
                         log::info!(
                             "Skipping large file: {} ({}B)",
@@ -503,7 +511,7 @@ async fn extract_clipboard_content(
     if let Ok(true) = tauri_plugin_clipboard_x::has_image().await {
         if let Ok(img_result) = tauri_plugin_clipboard_x::read_image(app.clone(), None).await {
             // Read the saved image file
-            if let Ok(img_data) = std::fs::read(&img_result.path) {
+            if let Ok(img_data) = tokio::fs::read(&img_result.path).await {
                 return Some((ContentType::Image, img_data, None, None, None, None));
             }
         }
