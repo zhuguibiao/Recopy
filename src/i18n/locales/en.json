@@ -104,6 +104,17 @@
       "database": "Database"
     }
   },
+  "update": {
+    "available": "v{{version}} available",
+    "restart": "Restart to update",
+    "failed": "Update failed",
+    "checkInterval": "Update Check",
+    "checkIntervalDesc": "How often to check for new versions",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "never": "Never"
+  },
   "time": {
     "justNow": "just now",
     "minutesAgo": "{{count}}m ago",

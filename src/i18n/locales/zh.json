@@ -104,6 +104,17 @@
       "database": "数据库"
     }
   },
+  "update": {
+    "available": "v{{version}} 可更新",
+    "restart": "重启以更新",
+    "failed": "更新失败",
+    "checkInterval": "更新检查",
+    "checkIntervalDesc": "检查新版本的频率",
+    "daily": "每天",
+    "weekly": "每周",
+    "monthly": "每月",
+    "never": "从不"
+  },
   "time": {
     "justNow": "刚刚",
     "minutesAgo": "{{count}}分钟前",

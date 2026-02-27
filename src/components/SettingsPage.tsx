@@ -291,6 +291,7 @@ function PrivacySettings() {
 function AboutSettings() {
   const { t } = useTranslation();
   const [version, setVersion] = useState("");
+  const { settings, updateSetting } = useSettingsStore();
 
   useEffect(() => {
     import("@tauri-apps/api/app").then((mod) =>
@@ -309,6 +310,19 @@ function AboutSettings() {
           <p className="text-xs text-muted-foreground/80">{t("app.description")}</p>
         </CardContent>
       </Card>
+
+      <SettingRow label={t("update.checkInterval")} description={t("update.checkIntervalDesc")}>
+        <SegmentedControl
+          value={settings.update_check_interval}
+          options={[
+            { value: "daily", icon: <Clock size={13} />, label: t("update.daily") },
+            { value: "weekly", icon: <Clock size={13} />, label: t("update.weekly") },
+            { value: "monthly", icon: <Clock size={13} />, label: t("update.monthly") },
+            { value: "never", icon: <Clock size={13} />, label: t("update.never") },
+          ]}
+          onChange={(v) => updateSetting("update_check_interval", v)}
+        />
+      </SettingRow>
 
       <Card className="border-border/50 bg-card/60 py-0 overflow-hidden">
         {[

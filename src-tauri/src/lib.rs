@@ -46,6 +46,12 @@ pub fn run() {
     // Register NSPanel plugin on macOS (no-op on other platforms)
     let builder = platform::apply_plugin(builder);
 
+    // Register updater + process plugins (gated behind self-update feature for App Store compat)
+    #[cfg(feature = "self-update")]
+    let builder = builder
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init());
+
     builder
         .invoke_handler(tauri::generate_handler![
             clip_cmd::get_clipboard_items,

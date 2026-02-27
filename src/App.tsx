@@ -10,8 +10,10 @@ import { TypeFilter } from "./components/TypeFilter";
 import { ViewTabs } from "./components/ViewTabs";
 import { ClipboardList } from "./components/ClipboardList";
 import { SettingsPage } from "./components/SettingsPage";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { useClipboardStore } from "./stores/clipboard-store";
 import { useSettingsStore, type ShowEventPayload } from "./stores/settings-store";
+import { useUpdateStore } from "./stores/update-store";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { PreviewPage } from "./components/PreviewPage";
 
@@ -21,12 +23,21 @@ const isSettingsPage = pageParam === "settings";
 const isHudPage = pageParam === "hud";
 const isPreviewPage = pageParam === "preview";
 
+// Interval setting value → milliseconds
+const CHECK_INTERVALS: Record<string, number> = {
+  daily: 24 * 60 * 60 * 1000,
+  weekly: 7 * 24 * 60 * 60 * 1000,
+  monthly: 30 * 24 * 60 * 60 * 1000,
+};
+
 function MainApp() {
   const fetchItems = useClipboardStore((s) => s.fetchItems);
   const refreshOnChange = useClipboardStore((s) => s.refreshOnChange);
   const onPanelShow = useClipboardStore((s) => s.onPanelShow);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const syncSettingsFromEvent = useSettingsStore((s) => s.syncSettingsFromEvent);
+  const updateCheckInterval = useSettingsStore((s) => s.settings.update_check_interval);
+  const checkForUpdate = useUpdateStore((s) => s.checkForUpdate);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Keyboard navigation
@@ -36,6 +47,15 @@ function MainApp() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  // Check for updates on startup + periodic interval
+  useEffect(() => {
+    const ms = CHECK_INTERVALS[updateCheckInterval];
+    if (!ms) return; // "never" → no check at all
+    checkForUpdate();
+    const timer = setInterval(checkForUpdate, ms);
+    return () => clearInterval(timer);
+  }, [checkForUpdate, updateCheckInterval]);
 
   // Initial load
   useEffect(() => {
@@ -102,7 +122,10 @@ function MainApp() {
       >
         {/* Header — single row, centered */}
         <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
-          <span className="absolute left-4 text-base font-bold text-foreground/80 tracking-tight">Recopy</span>
+          <span className="absolute left-4 flex items-center gap-2 text-base font-bold text-foreground/80 tracking-tight">
+            Recopy
+            <UpdateBanner />
+          </span>
           <ViewTabs />
           <SearchBar />
           <TypeFilter />
