@@ -13,7 +13,8 @@
     "text": "Text",
     "rich": "Rich",
     "image": "Image",
-    "file": "File"
+    "file": "File",
+    "link": "Link"
   },
   "search": {
     "placeholder": "Search clipboard history..."
@@ -30,13 +31,15 @@
     "copied": "Copied",
     "favorite": "Favorite",
     "unfavorite": "Unfavorite",
-    "delete": "Delete"
+    "delete": "Delete",
+    "openInBrowser": "Open in Browser"
   },
   "card": {
     "text": "Text",
     "richText": "Rich Text",
     "image": "Image",
     "file": "File",
+    "link": "Link",
     "unknownFile": "Unknown file",
     "clipboardImage": "Clipboard image"
   },

@@ -94,6 +94,8 @@ function PreviewContent({ detail }: { detail: ItemDetail }) {
           />
         </WithTitleBar>
       );
+    case "link":
+      return <ReadableCard><PlainTextPreview text={detail.plain_text} /></ReadableCard>;
     default:
       return <ReadableCard><PlainTextPreview text={detail.plain_text} /></ReadableCard>;
   }

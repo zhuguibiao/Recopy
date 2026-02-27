@@ -663,6 +663,11 @@ fn calculate_preview_size(detail: &ItemDetail, screen_w: f64, available_h: f64) 
             }
             (400.0, 300.0 + img_chrome_y)
         }
+        "link" => {
+            let effective_lines = estimate_display_lines(&detail.plain_text, content_width - text_pad);
+            let height = (effective_lines as f64 * line_height + text_pad).clamp(min_h, 240.0);
+            (content_width, height)
+        }
         _ => (content_width, 480.0),
     }
 }
@@ -788,33 +793,6 @@ pub fn show_copy_hud(app: AppHandle) {
             crate::platform::platform_hide_hud(&app_clone);
         }
     });
-}
-
-/// Open an external URL in the system default browser.
-#[tauri::command]
-pub fn open_url(url: String) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        Command::new("open")
-            .arg(&url)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(target_os = "windows")]
-    {
-        Command::new("cmd")
-            .args(["/C", "start", "", &url])
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        Command::new("xdg-open")
-            .arg(&url)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    Ok(())
 }
 
 /// Open the settings window.
@@ -1021,4 +999,34 @@ pub fn update_window_effects_for_theme(app: &AppHandle, theme: &str) {
         };
         let _ = main_window.set_theme(window_theme);
     }
+}
+
+/// Open a URL in the default browser.
+#[tauri::command]
+pub async fn open_url(url: String) -> Result<(), String> {
+    let parsed = url::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err("Only http/https URLs are allowed".to_string());
+    }
+    let normalized = parsed.as_str();
+
+    #[cfg(target_os = "macos")]
+    Command::new("open")
+        .arg(normalized)
+        .spawn()
+        .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    Command::new("cmd")
+        .args(["/c", "start", "", normalized])
+        .spawn()
+        .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    #[cfg(target_os = "linux")]
+    Command::new("xdg-open")
+        .arg(normalized)
+        .spawn()
+        .map_err(|e| format!("Failed to open URL: {}", e))?;
+
+    Ok(())
 }
