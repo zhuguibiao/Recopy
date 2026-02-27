@@ -1,4 +1,4 @@
-export type ContentType = "plain_text" | "rich_text" | "image" | "file";
+export type ContentType = "plain_text" | "rich_text" | "image" | "file" | "link";
 
 export interface ClipboardItem {
   id: string;
@@ -40,4 +40,4 @@ export interface FilePreviewData {
 }
 
 export type ViewMode = "history" | "pins";
-export type FilterType = "all" | "plain_text" | "rich_text" | "image" | "file";
+export type FilterType = "all" | "plain_text" | "rich_text" | "image" | "file" | "link";

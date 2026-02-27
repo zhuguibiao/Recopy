@@ -9,6 +9,7 @@ const FILTERS: { i18nKey: string; value: FilterType }[] = [
   { i18nKey: "filter.rich", value: "rich_text" },
   { i18nKey: "filter.image", value: "image" },
   { i18nKey: "filter.file", value: "file" },
+  { i18nKey: "filter.link", value: "link" },
 ];
 
 export function TypeFilter() {

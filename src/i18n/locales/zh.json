@@ -13,7 +13,8 @@
     "text": "文本",
     "rich": "富文本",
     "image": "图片",
-    "file": "文件"
+    "file": "文件",
+    "link": "链接"
   },
   "search": {
     "placeholder": "搜索剪贴板历史..."
@@ -30,13 +31,15 @@
     "copied": "已复制",
     "favorite": "收藏",
     "unfavorite": "取消收藏",
-    "delete": "删除"
+    "delete": "删除",
+    "openInBrowser": "在浏览器中打开"
   },
   "card": {
     "text": "文本",
     "richText": "富文本",
     "image": "图片",
     "file": "文件",
+    "link": "链接",
     "unknownFile": "未知文件",
     "clipboardImage": "剪贴板图片"
   },

@@ -622,9 +622,27 @@ async fn extract_clipboard_content(
         }
     }
 
-    // Try plain text
+    // Try text-based content: link (pure URL) or plain text
     if let Ok(true) = tauri_plugin_clipboard_x::has_text().await {
         if let Ok(text) = tauri_plugin_clipboard_x::read_text().await {
+            let trimmed = text.trim();
+            if !trimmed.is_empty() {
+                // Check if it's a pure URL
+                if let Ok(parsed) = url::Url::parse(trimmed) {
+                    if matches!(parsed.scheme(), "http" | "https") {
+                        let content = trimmed.as_bytes().to_vec();
+                        return Some((
+                            ContentType::Link,
+                            content,
+                            Some(trimmed.to_string()),
+                            None,
+                            None,
+                            None,
+                        ));
+                    }
+                }
+            }
+            // Fall through to plain text
             if !text.is_empty() {
                 let content = text.as_bytes().to_vec();
                 return Some((ContentType::PlainText, content, Some(text), None, None, None));

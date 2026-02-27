@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Clipboard, ClipboardPaste, FileText, Star, Trash2 } from "lucide-react";
+import { Clipboard, ClipboardPaste, ExternalLink, FileText, Star, Trash2 } from "lucide-react";
 import type { ClipboardItem } from "../lib/types";
 import { pasteItem, copyToClipboard, pasteAsPlainText } from "../lib/paste";
 import { useClipboardStore } from "../stores/clipboard-store";
@@ -40,6 +40,14 @@ export function ItemContextMenu({ item, children }: ItemContextMenuProps) {
 
   const handleDelete = () => deleteItem(item.id);
 
+  const handleOpenInBrowser = () => {
+    if (item.content_type === "link" && item.plain_text) {
+      invoke("open_url", { url: item.plain_text }).catch((e) =>
+        console.error("Failed to open URL:", e)
+      );
+    }
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
@@ -56,6 +64,15 @@ export function ItemContextMenu({ item, children }: ItemContextMenuProps) {
           <Clipboard size={14} />
           {t("context.copyToClipboard")}
         </ContextMenuItem>
+        {item.content_type === "link" && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={handleOpenInBrowser}>
+              <ExternalLink size={14} />
+              {t("context.openInBrowser")}
+            </ContextMenuItem>
+          </>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={handleToggleFavorite}>
           <Star size={14} />

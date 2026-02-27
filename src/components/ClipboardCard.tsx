@@ -5,6 +5,7 @@ import { TextCard } from "./TextCard";
 import { RichTextCard } from "./RichTextCard";
 import { ImageCard } from "./ImageCard";
 import { FileCard } from "./FileCard";
+import { LinkCard } from "./LinkCard";
 import { ItemContextMenu } from "./ItemContextMenu";
 
 interface ClipboardCardProps {
@@ -30,6 +31,8 @@ export function ClipboardCard({ item, selected, onClick }: ClipboardCardProps) {
         return <ImageCard item={item} selected={selected} onClick={onClick} />;
       case "file":
         return <FileCard item={item} selected={selected} onClick={onClick} />;
+      case "link":
+        return <LinkCard item={item} selected={selected} onClick={onClick} />;
       default:
         return <TextCard item={item} selected={selected} onClick={onClick} />;
     }

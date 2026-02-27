@@ -8,6 +8,7 @@ pub enum ContentType {
     RichText,
     Image,
     File,
+    Link,
 }
 
 impl ContentType {
@@ -17,6 +18,7 @@ impl ContentType {
             ContentType::RichText => "rich_text",
             ContentType::Image => "image",
             ContentType::File => "file",
+            ContentType::Link => "link",
         }
     }
 
@@ -27,6 +29,7 @@ impl ContentType {
             "rich_text" => Some(ContentType::RichText),
             "image" => Some(ContentType::Image),
             "file" => Some(ContentType::File),
+            "link" => Some(ContentType::Link),
             _ => None,
         }
     }
