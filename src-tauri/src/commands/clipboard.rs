@@ -1,5 +1,5 @@
 use crate::db::{
-    models::{ClipboardItem, ContentType, FilePreviewData, ItemDetail, NewClipboardItem, PreviewState},
+    models::{ClipboardItem, ContentType, FilePreviewData, ItemDetail, NewClipboardItem, PreviewClosing, PreviewResponse, PreviewState},
     queries, DbPool,
 };
 use crate::clipboard as clip_util;
@@ -496,10 +496,33 @@ pub async fn show_preview_window(
     app: AppHandle,
     db: State<'_, DbPool>,
     preview_state: State<'_, PreviewState>,
+    closing: State<'_, PreviewClosing>,
     id: String,
 ) -> Result<(), String> {
+    // Cancel any in-progress close animation
+    closing.0.store(false, std::sync::atomic::Ordering::SeqCst);
+
     let detail = load_item_detail(&db, &id).await?;
-    let (width, height) = calculate_preview_size(&detail);
+
+    // Calculate available space above the main panel for preview sizing
+    let (screen_w, available_h) = (|| -> Option<(f64, f64)> {
+        let preview_win = app.get_webview_window("preview")?;
+        let monitor = preview_win.current_monitor().ok()??;
+        let scale = monitor.scale_factor();
+        let screen_w = monitor.size().width as f64 / scale;
+        let mon_y = monitor.position().y as f64 / scale;
+
+        let main_win = app.get_webview_window("main")?;
+        let main_pos = main_win.outer_position().ok()?;
+        let panel_top_y = main_pos.y as f64 / scale;
+
+        // Available height = panel top - monitor top - margins (gap + top margin)
+        let available = panel_top_y - mon_y - 24.0; // 8px gap + 16px top margin
+        Some((screen_w, available))
+    })()
+    .unwrap_or((1920.0, 800.0));
+
+    let (width, height) = calculate_preview_size(&detail, screen_w, available_h);
 
     // Store in state so PreviewPage can poll via get_current_preview
     *preview_state.0.lock().unwrap() = Some(detail);
@@ -516,43 +539,70 @@ pub fn hide_preview_window(app: AppHandle) {
     crate::platform::platform_hide_preview(&app);
 }
 
-/// Get the current preview item detail (stored by show_preview_window).
-/// Called by PreviewPage on mount to solve the race condition.
+/// Get the current preview item detail + closing animation flag.
+/// Called by PreviewPage via polling to detect content changes and close animation.
 #[tauri::command]
 pub fn get_current_preview(
     preview_state: State<'_, PreviewState>,
-) -> Result<Option<ItemDetail>, String> {
-    Ok(preview_state.0.lock().unwrap().clone())
+    closing: State<'_, PreviewClosing>,
+) -> Result<PreviewResponse, String> {
+    Ok(PreviewResponse {
+        detail: preview_state.0.lock().unwrap().clone(),
+        closing: closing.0.load(std::sync::atomic::Ordering::SeqCst),
+    })
 }
 
-/// Calculate adaptive window size based on content type.
+/// Animate preview close: set closing flag, wait for CSS animation, then hide.
+#[tauri::command]
+pub async fn animate_close_preview(
+    app: AppHandle,
+    closing: State<'_, PreviewClosing>,
+) -> Result<(), String> {
+    // Prevent double-close
+    if closing.0.load(std::sync::atomic::Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    // Signal frontend to play exit animation
+    closing.0.store(true, std::sync::atomic::Ordering::SeqCst);
+
+    // Wait for animation to complete (CSS animation is 200ms, add buffer)
+    tokio::time::sleep(std::time::Duration::from_millis(220)).await;
+
+    // Hide the window
+    crate::platform::platform_hide_preview(&app);
+
+    // Clear flag
+    closing.0.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    Ok(())
+}
+
+/// Calculate adaptive window size based on content type and available space.
+/// `available_h` = space above the main panel (preview lives above the panel).
 /// Padding breakdown: header (48px) + content padding top/bottom (32px) + outer window padding (40px) = 120px
-fn calculate_preview_size(detail: &ItemDetail) -> (f64, f64) {
+fn calculate_preview_size(detail: &ItemDetail, screen_w: f64, available_h: f64) -> (f64, f64) {
     let content_width = 600.0;
     let padding_x = 32.0; // left + right padding
     let padding_y = 120.0; // header (48) + content padding (32) + outer padding (40)
     let line_height = 22.0; // matches text-sm leading-relaxed
-    let min_h = 240.0;
-    let max_h = 800.0; // ~60% of typical screen height
+    let min_h = 240.0; // minimum height fallback (even if it overlaps panel)
+    let max_w = screen_w * 0.7; // 70% of screen width
+    let max_h = available_h.max(min_h); // use available space above panel, but never below min_h
+
+    /// Scale image dimensions to fit within max bounds, don't upscale.
+    fn fit_image(iw: u32, ih: u32, max_w: f64, max_h: f64, pad_x: f64, pad_y: f64, min_h: f64) -> (f64, f64) {
+        let scale = (max_w / iw as f64).min(max_h / ih as f64).min(1.0);
+        let win_w = (iw as f64 * scale + pad_x).max(300.0);
+        let win_h = (ih as f64 * scale + pad_y).max(min_h);
+        (win_w, win_h)
+    }
 
     match detail.content_type.as_str() {
         "image" => {
             if let Some(ref path) = detail.image_path {
                 if let Ok((w, h)) = image::image_dimensions(path) {
-                    let max_content_w = 800.0_f64;
-                    let max_content_h = 600.0_f64;
-
-                    // Scale to fit within max bounds, don't upscale
-                    let scale = (max_content_w / w as f64)
-                        .min(max_content_h / h as f64)
-                        .min(1.0);
-
-                    let content_w = w as f64 * scale;
-                    let content_h = h as f64 * scale;
-
-                    let win_w = (content_w + padding_x).max(300.0);
-                    let win_h = (content_h + padding_y).max(min_h);
-                    return (win_w, win_h);
+                    return fit_image(w, h, max_w - padding_x, max_h - padding_y, padding_x, padding_y, min_h);
                 }
             }
             (600.0, 480.0)
@@ -580,18 +630,13 @@ fn calculate_preview_size(detail: &ItemDetail) -> (f64, f64) {
                     .unwrap_or("")
                     .to_lowercase();
                 if TEXT_EXTENSIONS.contains(&ext.as_str()) {
-                    // Text file: use line-based height like plain_text
                     let effective_lines = estimate_display_lines(&detail.plain_text, content_width - padding_x).max(10);
                     let height = (effective_lines as f64 * line_height + padding_y).clamp(min_h, max_h);
                     return (content_width, height);
                 }
                 if IMAGE_EXTENSIONS.contains(&ext.as_str()) {
-                    // Image file: use image sizing
                     if let Ok((w, h)) = image::image_dimensions(path) {
-                        let scale = (800.0_f64 / w as f64).min(600.0 / h as f64).min(1.0);
-                        let win_w = (w as f64 * scale + padding_x).max(300.0);
-                        let win_h = (h as f64 * scale + padding_y).max(min_h);
-                        return (win_w, win_h);
+                        return fit_image(w, h, max_w - padding_x, max_h - padding_y, padding_x, padding_y, min_h);
                     }
                 }
             }

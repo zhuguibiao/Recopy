@@ -4,11 +4,12 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import DOMPurify from "dompurify";
 import { useSettingsStore } from "../stores/settings-store";
 import { FileText, ImageIcon, Type, File } from "lucide-react";
-import type { ItemDetail, FilePreviewData } from "../lib/types";
+import type { ItemDetail, PreviewResponse, FilePreviewData } from "../lib/types";
 
 export function PreviewPage() {
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [closing, setClosing] = useState(false);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const lastIdRef = useRef<string | null>(null);
 
@@ -22,11 +23,20 @@ export function PreviewPage() {
   // so we use polling via invoke() which is always reliable.
   useEffect(() => {
     const poll = () => {
-      invoke<ItemDetail | null>("get_current_preview")
-        .then((d) => {
+      invoke<PreviewResponse>("get_current_preview")
+        .then((resp) => {
+          // Handle closing animation signal
+          if (resp.closing && !closing) {
+            setClosing(true);
+          } else if (!resp.closing && closing) {
+            setClosing(false);
+          }
+
+          const d = resp.detail;
           if (d && d.id !== lastIdRef.current) {
             lastIdRef.current = d.id;
             setDetail(d);
+            setClosing(false); // Reset closing on new content
             setLoading(false);
           } else if (!d && loading) {
             setLoading(false);
@@ -41,7 +51,7 @@ export function PreviewPage() {
     // Poll interval
     const timer = setInterval(poll, 100);
     return () => clearInterval(timer);
-  }, []);
+  }, [closing]);
 
   if (loading || !detail) {
     return (
@@ -53,7 +63,7 @@ export function PreviewPage() {
 
   return (
     <div className="h-screen w-screen flex items-center justify-center p-4">
-      <div className="preview-content preview-enter w-full h-full flex flex-col rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl overflow-hidden">
+      <div className={`preview-content ${closing ? "preview-exit" : "preview-enter"} w-full h-full flex flex-col rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl overflow-hidden`}>
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30 shrink-0">
           <ContentTypeIcon type={detail.content_type} />

@@ -54,6 +54,7 @@ pub fn run() {
             clip_cmd::open_settings_window,
             clip_cmd::show_preview_window,
             clip_cmd::hide_preview_window,
+            clip_cmd::animate_close_preview,
             clip_cmd::get_current_preview,
             clip_cmd::read_file_preview,
             clip_cmd::hide_window,
@@ -74,6 +75,7 @@ pub fn run() {
 
             // Initialize preview state for Quick Look feature
             app.manage(db::models::PreviewState(std::sync::Mutex::new(None)));
+            app.manage(db::models::PreviewClosing(std::sync::atomic::AtomicBool::new(false)));
 
             // Initialize platform (convert window to NSPanel on macOS)
             platform::init_platform(app)?;
@@ -173,6 +175,7 @@ pub fn hide_main_window(app: &tauri::AppHandle) {
 }
 
 /// Show the preview window with adaptive sizing (pre-created at startup).
+/// Positions the preview centered above the main panel, not centered on screen.
 pub fn show_preview_window_impl(app: &tauri::AppHandle, width: f64, height: f64) {
     let Some(window) = app.get_webview_window("preview") else {
         return;
@@ -188,18 +191,30 @@ pub fn show_preview_window_impl(app: &tauri::AppHandle, width: f64, height: f64)
         }
     }
 
-    // Center on screen
-    if let Ok(Some(monitor)) = window.current_monitor() {
-        let size = monitor.size();
-        let pos = monitor.position();
+    // Position above the main panel, horizontally centered on screen
+    let positioned = (|| -> Option<()> {
+        let monitor = window.current_monitor().ok()??;
         let scale = monitor.scale_factor();
-        let screen_w = size.width as f64 / scale;
-        let screen_h = size.height as f64 / scale;
-        let x = pos.x as f64 / scale + (screen_w - width) / 2.0;
-        let y = pos.y as f64 / scale + (screen_h - height) / 2.0;
+        let screen_w = monitor.size().width as f64 / scale;
+        let mon_x = monitor.position().x as f64 / scale;
+
+        let main_win = app.get_webview_window("main")?;
+        let main_pos = main_win.outer_position().ok()?;
+        let panel_top_y = main_pos.y as f64 / scale;
+
+        let gap = 8.0;
+        let x = mon_x + (screen_w - width) / 2.0;
+        let y = panel_top_y - height - gap;
+
         let _ = window.set_position(tauri::Position::Logical(
             tauri::LogicalPosition::new(x, y),
         ));
+        Some(())
+    })();
+
+    // Fallback: center on screen if main panel position unavailable
+    if positioned.is_none() {
+        let _ = window.center();
     }
 
     // Show panel — dispatched to main thread inside platform_show_preview

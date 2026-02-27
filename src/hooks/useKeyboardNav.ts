@@ -36,7 +36,7 @@ export function useKeyboardNav() {
 
   const closePreview = useCallback(() => {
     previewOpenRef.current = false;
-    invoke("hide_preview_window");
+    invoke("animate_close_preview");
   }, []);
 
   const updatePreview = useCallback((id: string) => {

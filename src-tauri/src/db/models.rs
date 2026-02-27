@@ -75,6 +75,16 @@ pub struct ItemDetail {
 /// Shared state holding the current preview item detail.
 pub struct PreviewState(pub std::sync::Mutex<Option<ItemDetail>>);
 
+/// Atomic flag: true while preview exit animation is playing.
+pub struct PreviewClosing(pub std::sync::atomic::AtomicBool);
+
+/// Response from get_current_preview: item detail + closing animation flag.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PreviewResponse {
+    pub detail: Option<ItemDetail>,
+    pub closing: bool,
+}
+
 /// Data returned by read_file_preview command.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FilePreviewData {

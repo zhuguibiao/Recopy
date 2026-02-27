@@ -28,6 +28,11 @@ export interface ItemDetail {
   content_size: number;
 }
 
+export interface PreviewResponse {
+  detail: ItemDetail | null;
+  closing: boolean;
+}
+
 export interface FilePreviewData {
   content: string;
   truncated: boolean;
