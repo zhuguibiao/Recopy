@@ -1,5 +1,6 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useClipboardStore } from "../stores/clipboard-store";
 import { useCopyHud } from "../components/CopyHud";
 import { pasteItem, copyToClipboard } from "../lib/paste";
@@ -9,6 +10,7 @@ export function useKeyboardNav() {
   const items = useClipboardStore((s) => s.items);
   const selectedIndex = useClipboardStore((s) => s.selectedIndex);
   const setSelectedIndex = useClipboardStore((s) => s.setSelectedIndex);
+  const previewOpenRef = useRef(false);
 
   // Compute the first flat-index of each date group for up/down navigation.
   const groupStartIndices = useMemo(() => {
@@ -23,6 +25,23 @@ export function useKeyboardNav() {
     });
     return starts;
   }, [items]);
+
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const openPreview = useCallback((id: string) => {
+    previewOpenRef.current = true;
+    invoke("show_preview_window", { id });
+  }, []);
+
+  const closePreview = useCallback(() => {
+    previewOpenRef.current = false;
+    invoke("animate_close_preview");
+  }, []);
+
+  const updatePreview = useCallback((id: string) => {
+    invoke("show_preview_window", { id });
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -67,11 +86,43 @@ export function useKeyboardNav() {
           }
           return;
         }
-        // All other keys (typing, Left/Right cursor, ArrowUp) go to input naturally
+        // All other keys (typing, Space, Left/Right cursor, ArrowUp) go to input naturally
         return;
       }
 
       // --- Card navigation mode (input NOT focused) ---
+
+      // Space: toggle preview
+      if (e.key === " ") {
+        e.preventDefault();
+        if (previewOpenRef.current) {
+          closePreview();
+        } else if (items[selectedIndex]) {
+          openPreview(items[selectedIndex].id);
+        }
+        return;
+      }
+
+      // Escape: close preview first, then hide window
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (previewOpenRef.current) {
+          closePreview();
+        } else {
+          invoke("hide_window");
+        }
+        return;
+      }
+
+      // Enter: block while preview is open, otherwise paste
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!previewOpenRef.current && items[selectedIndex]) {
+          pasteItem(items[selectedIndex]);
+        }
+        return;
+      }
+
       switch (e.key) {
         case "ArrowRight": {
           e.preventDefault();
@@ -110,18 +161,6 @@ export function useKeyboardNav() {
           }
           break;
         }
-        case "Enter": {
-          e.preventDefault();
-          if (items[selectedIndex]) {
-            pasteItem(items[selectedIndex]);
-          }
-          break;
-        }
-        case "Escape": {
-          e.preventDefault();
-          invoke("hide_window");
-          break;
-        }
         case "c": {
           if (e.metaKey || e.ctrlKey) {
             e.preventDefault();
@@ -135,11 +174,30 @@ export function useKeyboardNav() {
         }
       }
     },
-    [items, selectedIndex, setSelectedIndex, groupStartIndices]
+    [items, selectedIndex, setSelectedIndex, groupStartIndices, openPreview, closePreview]
   );
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Auto-update preview when selection or underlying item changes
+  const selectedItemId = items[selectedIndex]?.id;
+  useEffect(() => {
+    if (previewOpenRef.current && selectedItemId) {
+      updatePreview(selectedItemId);
+    }
+  }, [selectedItemId, updatePreview]);
+
+  // Reset preview state when panel hides (blur)
+  useEffect(() => {
+    const unlisten = listen("tauri://blur", () => {
+      previewOpenRef.current = false;
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+      previewOpenRef.current = false;
+    };
+  }, []);
 }

@@ -1,5 +1,5 @@
 use crate::db::{
-    models::{ClipboardItem, ContentType, ItemDetail, NewClipboardItem},
+    models::{ClipboardItem, ContentType, FilePreviewData, ItemDetail, NewClipboardItem, PreviewClosing, PreviewResponse, PreviewState},
     queries, DbPool,
 };
 use crate::clipboard as clip_util;
@@ -53,13 +53,9 @@ pub async fn get_thumbnail(
         .map_err(|e| e.to_string())
 }
 
-/// Get full item detail for preview (includes rich_content).
-#[tauri::command]
-pub async fn get_item_detail(
-    db: State<'_, DbPool>,
-    id: String,
-) -> Result<ItemDetail, String> {
-    let row = queries::get_item_detail(&db.0, &id)
+/// Internal helper to load full item detail from DB.
+async fn load_item_detail(db: &DbPool, id: &str) -> Result<ItemDetail, String> {
+    let row = queries::get_item_detail(&db.0, id)
         .await
         .map_err(|e| e.to_string())?
         .ok_or("Item not found")?;
@@ -67,6 +63,7 @@ pub async fn get_item_detail(
     let (content_type, plain_text, rich_content, image_path, file_path, file_name, content_size) = row;
 
     Ok(ItemDetail {
+        id: id.to_string(),
         content_type,
         plain_text,
         rich_content,
@@ -75,6 +72,15 @@ pub async fn get_item_detail(
         file_name,
         content_size,
     })
+}
+
+/// Get full item detail for preview (includes rich_content).
+#[tauri::command]
+pub async fn get_item_detail(
+    db: State<'_, DbPool>,
+    id: String,
+) -> Result<ItemDetail, String> {
+    load_item_detail(&db, &id).await
 }
 
 /// Delete a clipboard item and remove its original image file if present.
@@ -483,10 +489,47 @@ pub async fn cleanup_orphan_images(app: &AppHandle) {
     }
 }
 
-/// Show the preview window (create if needed).
+/// Show the preview window with adaptive sizing based on content.
+/// Loads item detail from DB, calculates window size, stores in PreviewState.
 #[tauri::command]
-pub fn show_preview_window(app: AppHandle) -> Result<(), String> {
-    crate::show_preview_window_impl(&app);
+pub async fn show_preview_window(
+    app: AppHandle,
+    db: State<'_, DbPool>,
+    preview_state: State<'_, PreviewState>,
+    closing: State<'_, PreviewClosing>,
+    id: String,
+) -> Result<(), String> {
+    // Cancel any in-progress close animation
+    closing.0.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    let detail = load_item_detail(&db, &id).await?;
+
+    // Calculate available space above the main panel for preview sizing
+    let (screen_w, available_h) = (|| -> Option<(f64, f64)> {
+        let preview_win = app.get_webview_window("preview")?;
+        let monitor = preview_win.current_monitor().ok()??;
+        let scale = monitor.scale_factor();
+        let screen_w = monitor.size().width as f64 / scale;
+        let mon_y = monitor.position().y as f64 / scale;
+
+        let main_win = app.get_webview_window("main")?;
+        let main_pos = main_win.outer_position().ok()?;
+        let panel_top_y = main_pos.y as f64 / scale;
+
+        // Available height = panel top - monitor top - margins (gap + top margin)
+        let available = panel_top_y - mon_y - 24.0; // 8px gap + 16px top margin
+        Some((screen_w, available))
+    })()
+    .unwrap_or((1920.0, 800.0));
+
+    let (width, height) = calculate_preview_size(&detail, screen_w, available_h);
+
+    // Store in state so PreviewPage can poll via get_current_preview
+    *preview_state.0.lock().unwrap() = Some(detail);
+
+    // Show window with adaptive size
+    crate::show_preview_window_impl(&app, width, height);
+
     Ok(())
 }
 
@@ -494,6 +537,199 @@ pub fn show_preview_window(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn hide_preview_window(app: AppHandle) {
     crate::platform::platform_hide_preview(&app);
+}
+
+/// Get the current preview item detail + closing animation flag.
+/// Called by PreviewPage via polling to detect content changes and close animation.
+#[tauri::command]
+pub fn get_current_preview(
+    preview_state: State<'_, PreviewState>,
+    closing: State<'_, PreviewClosing>,
+) -> Result<PreviewResponse, String> {
+    Ok(PreviewResponse {
+        detail: preview_state.0.lock().unwrap().clone(),
+        closing: closing.0.load(std::sync::atomic::Ordering::SeqCst),
+    })
+}
+
+/// Animate preview close: set closing flag, wait for CSS animation, then hide.
+#[tauri::command]
+pub async fn animate_close_preview(
+    app: AppHandle,
+    closing: State<'_, PreviewClosing>,
+) -> Result<(), String> {
+    // Prevent double-close
+    if closing.0.load(std::sync::atomic::Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    // Signal frontend to play exit animation
+    closing.0.store(true, std::sync::atomic::Ordering::SeqCst);
+
+    // Wait for animation to complete (CSS animation is 200ms, add buffer)
+    tokio::time::sleep(std::time::Duration::from_millis(220)).await;
+
+    // Guard: if show_preview reopened during the sleep, closing flag was cleared — abort
+    if !closing.0.load(std::sync::atomic::Ordering::SeqCst) {
+        return Ok(());
+    }
+
+    // Hide the window
+    crate::platform::platform_hide_preview(&app);
+
+    // Clear flag
+    closing.0.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    Ok(())
+}
+
+/// Calculate adaptive window size based on content type and available space.
+/// `available_h` = space above the main panel (preview lives above the panel).
+fn calculate_preview_size(detail: &ItemDetail, screen_w: f64, available_h: f64) -> (f64, f64) {
+    // Image/file layout: title bar (py-1.5*2 + text ≈ 28) + bottom padding pb-2 (8)
+    let img_chrome_y = 36.0; // title bar + bottom pad
+    let img_chrome_x = 16.0; // px-2 left + right = 8*2
+    // Padding for text types: outer p-3 (24) + ReadableCard p-4 (32) = 56
+    let text_pad = 56.0;
+    let content_width = 600.0;
+    let line_height = 22.0; // matches text-sm leading-relaxed
+    let min_h = 240.0;
+    let max_w = screen_w * 0.7;
+    let max_h = available_h.max(min_h);
+
+    /// Scale image to fit max bounds (Quick Look style).
+    fn fit_image(iw: u32, ih: u32, max_w: f64, max_h: f64, min_h: f64) -> (f64, f64) {
+        let scale = (max_w / iw as f64).min(max_h / ih as f64).min(1.0);
+        let win_w = (iw as f64 * scale).max(300.0);
+        let win_h = (ih as f64 * scale).max(min_h);
+        (win_w, win_h)
+    }
+
+    match detail.content_type.as_str() {
+        "image" => {
+            if let Some(ref path) = detail.image_path {
+                if let Ok((w, h)) = image::image_dimensions(path) {
+                    let (iw, ih) = fit_image(w, h, max_w - img_chrome_x, max_h - img_chrome_y, min_h);
+                    return (iw + img_chrome_x, ih + img_chrome_y);
+                }
+            }
+            (600.0, 480.0)
+        }
+        "plain_text" => {
+            let effective_lines = estimate_display_lines(&detail.plain_text, content_width - text_pad);
+            let height = (effective_lines as f64 * line_height + text_pad).clamp(min_h, max_h);
+            (content_width, height)
+        }
+        "rich_text" => {
+            let text = &detail.plain_text;
+            let effective_lines = if text.is_empty() { 10 } else {
+                estimate_display_lines(text, content_width - text_pad)
+            };
+            let height = (effective_lines as f64 * line_height + text_pad).clamp(min_h, max_h);
+            (content_width, height)
+        }
+        "file" => {
+            if let Some(ref path) = detail.file_path {
+                let ext = std::path::Path::new(path)
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                if TEXT_EXTENSIONS.contains(&ext.as_str()) {
+                    let effective_lines = estimate_display_lines(&detail.plain_text, content_width - text_pad).max(10);
+                    let height = (effective_lines as f64 * line_height + text_pad + img_chrome_y).clamp(min_h, max_h);
+                    return (content_width, height);
+                }
+                if IMAGE_EXTENSIONS.contains(&ext.as_str()) {
+                    if let Ok((w, h)) = image::image_dimensions(path) {
+                        let (iw, ih) = fit_image(w, h, max_w - img_chrome_x, max_h - img_chrome_y, min_h);
+                        return (iw + img_chrome_x, ih + img_chrome_y);
+                    }
+                }
+            }
+            (400.0, 300.0 + img_chrome_y)
+        }
+        _ => (content_width, 480.0),
+    }
+}
+
+/// Estimate total display lines accounting for word-wrap.
+/// Uses average char width of ~7.2px for monospace font at text-sm size.
+fn estimate_display_lines(text: &str, available_width: f64) -> usize {
+    let char_width = 7.2; // approximate width of monospace char at 14px
+    let chars_per_line = (available_width / char_width).floor() as usize;
+    if chars_per_line == 0 {
+        return text.lines().count().max(1);
+    }
+
+    let mut total_lines = 0;
+    for line in text.lines() {
+        let char_count = line.chars().count();
+        if char_count == 0 {
+            total_lines += 1; // empty line still takes 1 row
+        } else {
+            // How many visual lines does this line wrap into?
+            total_lines += (char_count + chars_per_line - 1) / chars_per_line;
+        }
+    }
+    total_lines.max(1)
+}
+
+/// Text file extensions that should be rendered as code/text in preview.
+const TEXT_EXTENSIONS: &[&str] = &[
+    "txt", "md", "json", "js", "ts", "jsx", "tsx", "py", "rs", "css", "html", "xml",
+    "yaml", "yml", "toml", "log", "csv", "sh", "bash", "zsh", "fish",
+    "c", "cpp", "h", "hpp", "java", "kt", "go", "rb", "php", "swift", "sql",
+    "env", "gitignore", "dockerfile", "makefile", "conf", "ini", "cfg",
+];
+
+/// Image file extensions that should be rendered as images in preview.
+const IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "bmp", "ico", "svg"];
+
+/// Read file content for preview (first N bytes, up to 200 lines).
+#[tauri::command]
+pub async fn read_file_preview(path: String, max_bytes: Option<usize>) -> Result<FilePreviewData, String> {
+    let max = max_bytes.unwrap_or(50 * 1024); // default 50KB
+    let path_ref = std::path::Path::new(&path);
+
+    if !path_ref.exists() {
+        return Err("File not found".to_string());
+    }
+
+    let metadata = tokio::fs::metadata(path_ref).await.map_err(|e| e.to_string())?;
+    let file_size = metadata.len() as usize;
+
+    // Read up to max bytes
+    let bytes = if file_size <= max {
+        tokio::fs::read(path_ref).await.map_err(|e| e.to_string())?
+    } else {
+        let mut buf = vec![0u8; max];
+        use tokio::io::AsyncReadExt;
+        let mut f = tokio::fs::File::open(path_ref).await.map_err(|e| e.to_string())?;
+        let n = f.read(&mut buf).await.map_err(|e| e.to_string())?;
+        buf.truncate(n);
+        buf
+    };
+
+    // Try to interpret as UTF-8 text
+    let content = String::from_utf8_lossy(&bytes);
+
+    // Limit to 200 lines
+    let mut lines: Vec<&str> = content.lines().collect();
+    let total_lines = lines.len();
+    let truncated_by_lines = total_lines > 200;
+    if truncated_by_lines {
+        lines.truncate(200);
+    }
+
+    let text = lines.join("\n");
+    let truncated = file_size > max || truncated_by_lines;
+
+    Ok(FilePreviewData {
+        content: text,
+        truncated,
+        total_lines,
+    })
 }
 
 /// Hide the main window (works with NSPanel on macOS).

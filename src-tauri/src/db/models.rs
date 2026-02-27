@@ -55,6 +55,44 @@ pub struct ClipboardItem {
     pub updated_at: String,
 }
 
+/// Full item detail returned for preview (includes rich_content as string).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemDetail {
+    pub id: String,
+    pub content_type: String,
+    pub plain_text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rich_content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
+    pub content_size: i64,
+}
+
+/// Shared state holding the current preview item detail.
+pub struct PreviewState(pub std::sync::Mutex<Option<ItemDetail>>);
+
+/// Atomic flag: true while preview exit animation is playing.
+pub struct PreviewClosing(pub std::sync::atomic::AtomicBool);
+
+/// Response from get_current_preview: item detail + closing animation flag.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PreviewResponse {
+    pub detail: Option<ItemDetail>,
+    pub closing: bool,
+}
+
+/// Data returned by read_file_preview command.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FilePreviewData {
+    pub content: String,
+    pub truncated: bool,
+    pub total_lines: usize,
+}
+
 /// Payload for inserting a new clipboard item.
 pub struct NewClipboardItem {
     pub content_type: ContentType,
