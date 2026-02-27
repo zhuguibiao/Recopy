@@ -57,6 +57,13 @@ function MainApp() {
   useEffect(() => {
     const currentWindow = getCurrentWebviewWindow();
     const unlisten = currentWindow.listen("tauri://blur", () => {
+      // Instantly hide any open context menu portals to prevent flash on re-show,
+      // then trigger Radix's proper dismiss flow. visibility:hidden keeps animations
+      // running so Radix can detect animationend and unmount the Portal cleanly.
+      document.querySelectorAll<HTMLElement>('[data-slot="context-menu-content"]').forEach(el => {
+        el.style.visibility = "hidden";
+      });
+      document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
       const el = panelRef.current;
       if (el) {
         el.classList.remove("panel-enter");
