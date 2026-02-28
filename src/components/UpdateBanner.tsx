@@ -1,11 +1,19 @@
 import { useTranslation } from "react-i18next";
 import { useUpdateStore } from "../stores/update-store";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, RefreshCw, X } from "lucide-react";
 
 export function UpdateBanner() {
   const { t } = useTranslation();
-  const { status, version, progress, downloadAndInstall, relaunch } =
-    useUpdateStore();
+  const {
+    status,
+    version,
+    progress,
+    relaunchFailed,
+    downloadAndInstall,
+    retryDownload,
+    dismissError,
+    relaunch,
+  } = useUpdateStore();
 
   if (status === "idle" || status === "checking") {
     return null;
@@ -13,8 +21,22 @@ export function UpdateBanner() {
 
   if (status === "error") {
     return (
-      <span className="text-xs text-destructive/70">
-        {t("update.failed")}
+      <span className="flex items-center gap-1.5 text-xs text-destructive/70">
+        <span>{t("update.failed")}</span>
+        <button
+          onClick={retryDownload}
+          className="hover:text-destructive transition-colors cursor-pointer"
+          title={t("update.retry")}
+        >
+          <RefreshCw size={10} />
+        </button>
+        <button
+          onClick={dismissError}
+          className="hover:text-destructive transition-colors cursor-pointer"
+          title={t("update.dismiss")}
+        >
+          <X size={10} />
+        </button>
       </span>
     );
   }
@@ -50,6 +72,13 @@ export function UpdateBanner() {
   }
 
   if (status === "ready") {
+    if (relaunchFailed) {
+      return (
+        <span className="text-xs text-warning/80">
+          {t("update.restartManually")}
+        </span>
+      );
+    }
     return (
       <button
         onClick={relaunch}

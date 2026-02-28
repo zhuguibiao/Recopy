@@ -15,9 +15,18 @@ fn main() {
   ]
 }
 "#;
-        std::fs::write(&updater_cap, content).expect("Failed to write updater capability");
+        // Only write if content changed to avoid triggering Tauri's file watcher loop
+        let needs_write = match std::fs::read_to_string(&updater_cap) {
+            Ok(existing) => existing != content,
+            Err(_) => true,
+        };
+        if needs_write {
+            std::fs::write(&updater_cap, content).expect("Failed to write updater capability");
+        }
     } else {
-        let _ = std::fs::remove_file(&updater_cap);
+        if updater_cap.exists() {
+            let _ = std::fs::remove_file(&updater_cap);
+        }
     }
 
     tauri_build::build()

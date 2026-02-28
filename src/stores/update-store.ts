@@ -14,10 +14,13 @@ interface UpdateState {
   version: string | null;
   body: string | null;
   progress: number;
+  relaunchFailed: boolean;
   _updateRef: Update | null;
 
   checkForUpdate: () => Promise<void>;
   downloadAndInstall: () => Promise<void>;
+  retryDownload: () => Promise<void>;
+  dismissError: () => void;
   relaunch: () => Promise<void>;
 }
 
@@ -26,11 +29,15 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
   version: null,
   body: null,
   progress: 0,
+  relaunchFailed: false,
   _updateRef: null,
 
   checkForUpdate: async () => {
-    if (get().status === "downloading") return;
+    const { status } = get();
+    // Skip if already in a non-idle actionable state
+    if (status === "checking" || status === "downloading" || status === "ready") return;
 
+    const prevStatus = status;
     set({ status: "checking" });
     try {
       const { check } = await import("@tauri-apps/plugin-updater");
@@ -46,8 +53,13 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
         set({ status: "idle", _updateRef: null });
       }
     } catch {
-      // Plugin not available (App Store build) or network error — silent fail
-      set({ status: "idle", _updateRef: null });
+      // Plugin not available (App Store build) or network error
+      // Don't clobber available/error states on transient failures
+      if (prevStatus === "available" || prevStatus === "error") {
+        set({ status: prevStatus });
+      } else {
+        set({ status: "idle", _updateRef: null });
+      }
     }
   },
 
@@ -74,9 +86,21 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
       set({ status: "ready", progress: 100 });
     } catch (e) {
       console.error("Update download failed:", e);
+      // Keep _updateRef so retry can reuse it
       set({ status: "error" });
-      setTimeout(() => set({ status: "idle", _updateRef: null }), 5000);
     }
+  },
+
+  retryDownload: async () => {
+    const update = get()._updateRef;
+    if (!update || get().status !== "error") return;
+    // Reset to available, then trigger download
+    set({ status: "available" });
+    get().downloadAndInstall();
+  },
+
+  dismissError: () => {
+    set({ status: "idle", _updateRef: null });
   },
 
   relaunch: async () => {
@@ -85,6 +109,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
       await relaunch();
     } catch (e) {
       console.error("Relaunch failed:", e);
+      set({ relaunchFailed: true });
     }
   },
 }));

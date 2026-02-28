@@ -15,6 +15,12 @@ import { useClipboardStore } from "./stores/clipboard-store";
 import { useSettingsStore, type ShowEventPayload } from "./stores/settings-store";
 import { useUpdateStore } from "./stores/update-store";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
+
+// Expose update store to devtools console for UI testing
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).__updateStore = useUpdateStore;
+}
 import { PreviewPage } from "./components/PreviewPage";
 
 // Detect page type from URL params
@@ -36,6 +42,7 @@ function MainApp() {
   const onPanelShow = useClipboardStore((s) => s.onPanelShow);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const syncSettingsFromEvent = useSettingsStore((s) => s.syncSettingsFromEvent);
+  const settingsLoaded = useSettingsStore((s) => s.loaded);
   const updateCheckInterval = useSettingsStore((s) => s.settings.update_check_interval);
   const checkForUpdate = useUpdateStore((s) => s.checkForUpdate);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -48,14 +55,15 @@ function MainApp() {
     loadSettings();
   }, [loadSettings]);
 
-  // Check for updates on startup + periodic interval
+  // Check for updates on startup + periodic interval (wait for settings to load first)
   useEffect(() => {
+    if (!settingsLoaded) return;
     const ms = CHECK_INTERVALS[updateCheckInterval];
     if (!ms) return; // "never" → no check at all
     checkForUpdate();
     const timer = setInterval(checkForUpdate, ms);
     return () => clearInterval(timer);
-  }, [checkForUpdate, updateCheckInterval]);
+  }, [settingsLoaded, checkForUpdate, updateCheckInterval]);
 
   // Initial load
   useEffect(() => {
@@ -122,10 +130,12 @@ function MainApp() {
       >
         {/* Header — single row, centered */}
         <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
-          <span className="absolute left-4 flex items-center gap-2 text-base font-bold text-foreground/80 tracking-tight">
-            Recopy
-            <UpdateBanner />
-          </span>
+          <div className="absolute left-4 flex items-center gap-2">
+            <span className="text-base font-bold text-foreground/80 tracking-tight">Recopy</span>
+            <span className="translate-y-px">
+              <UpdateBanner />
+            </span>
+          </div>
           <ViewTabs />
           <SearchBar />
           <TypeFilter />
