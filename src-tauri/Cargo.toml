@@ -8,6 +8,10 @@ repository = "https://github.com/shiqkuangsan/Recopy"
 edition = "2021"
 rust-version = "1.77.2"
 
+[features]
+default = ["self-update"]
+self-update = ["tauri-plugin-updater", "tauri-plugin-process"]
+
 [lib]
 name = "recopy_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
@@ -33,6 +37,8 @@ tauri-plugin-autostart = "2.5.1"
 tauri-plugin-single-instance = "2.4.0"
 sys-locale = "0.3.2"
 url = "2"
+tauri-plugin-updater = { version = "2", optional = true }
+tauri-plugin-process = { version = "2", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

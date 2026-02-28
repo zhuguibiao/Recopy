@@ -15,6 +15,7 @@ export interface Settings {
   retention_count: string;
   max_item_size_mb: string;
   close_on_blur: string;
+  update_check_interval: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: Settings = {
   retention_count: "0",
   max_item_size_mb: "10",
   close_on_blur: "true",
+  update_check_interval: "weekly",
 };
 
 export interface ShowEventPayload {
@@ -87,6 +89,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         max_item_size_mb:
           raw.max_item_size_mb ?? DEFAULT_SETTINGS.max_item_size_mb,
         close_on_blur: raw.close_on_blur ?? DEFAULT_SETTINGS.close_on_blur,
+        update_check_interval:
+          raw.update_check_interval ?? DEFAULT_SETTINGS.update_check_interval,
       };
       set({ settings, loaded: true });
       applyTheme(settings.theme);
