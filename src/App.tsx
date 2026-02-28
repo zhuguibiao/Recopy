@@ -30,10 +30,13 @@ const isHudPage = pageParam === "hud";
 const isPreviewPage = pageParam === "preview";
 
 // Interval setting value → milliseconds
+// Note: JS timers use 32-bit signed int, max safe delay is 2^31-1 (≈24.8 days).
+// Values exceeding this overflow to ~1ms, causing rapid polling.
+const MAX_SAFE_INTERVAL = 2_147_483_647;
 const CHECK_INTERVALS: Record<string, number> = {
   daily: 24 * 60 * 60 * 1000,
   weekly: 7 * 24 * 60 * 60 * 1000,
-  monthly: 30 * 24 * 60 * 60 * 1000,
+  monthly: Math.min(30 * 24 * 60 * 60 * 1000, MAX_SAFE_INTERVAL),
 };
 
 function MainApp() {
