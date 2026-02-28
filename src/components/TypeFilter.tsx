@@ -6,10 +6,10 @@ import { createPressActionHandlers } from "../lib/press-action";
 const FILTERS: { i18nKey: string; value: FilterType }[] = [
   { i18nKey: "filter.all", value: "all" },
   { i18nKey: "filter.text", value: "plain_text" },
-  { i18nKey: "filter.rich", value: "rich_text" },
+  { i18nKey: "filter.link", value: "link" },
   { i18nKey: "filter.image", value: "image" },
   { i18nKey: "filter.file", value: "file" },
-  { i18nKey: "filter.link", value: "link" },
+  { i18nKey: "filter.rich", value: "rich_text" },
 ];
 
 export function TypeFilter() {
