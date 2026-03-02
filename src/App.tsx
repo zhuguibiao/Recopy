@@ -132,6 +132,11 @@ function MainApp() {
         ref={panelRef}
         className="panel-idle w-full h-full text-foreground flex flex-col font-sans overflow-hidden"
       >
+        {/* Drag handle — visual indicator for native top-edge resize */}
+        <div className="shrink-0 flex justify-center pointer-events-none select-none">
+          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mt-0.5 mb-0" />
+        </div>
+
         {/* Header — single row, centered */}
         <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
           <div className="absolute left-4 flex items-center gap-2">
