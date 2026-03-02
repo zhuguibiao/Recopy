@@ -33,7 +33,7 @@ export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
         <FileText size={13} />
         <span className="text-sm">{t("card.richText")}</span>
       </div>
-      <div className="text-sm text-foreground leading-relaxed line-clamp-5 flex-1 min-h-0">
+      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words overflow-y-auto flex-1 min-h-0">
         {preview}
       </div>
       <div className="flex items-center justify-end text-sm text-muted-foreground mt-auto pt-1.5">
