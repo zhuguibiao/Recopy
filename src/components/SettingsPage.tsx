@@ -29,8 +29,7 @@ type SettingsTab = "general" | "history" | "privacy" | "about";
 export function SettingsPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
-  const { settings, loaded, loadSettings, updateSetting, clearHistory } =
-    useSettingsStore();
+  const { settings, loaded, loadSettings, updateSetting, clearHistory } = useSettingsStore();
 
   useEffect(() => {
     if (!loaded) loadSettings();
@@ -78,7 +77,11 @@ export function SettingsPage() {
           <GeneralSettings settings={settings} updateSetting={updateSetting} />
         )}
         {activeTab === "history" && (
-          <HistorySettings settings={settings} updateSetting={updateSetting} clearHistory={clearHistory} />
+          <HistorySettings
+            settings={settings}
+            updateSetting={updateSetting}
+            clearHistory={clearHistory}
+          />
         )}
         {activeTab === "privacy" && <PrivacySettings />}
         {activeTab === "about" && <AboutSettings />}
@@ -112,7 +115,10 @@ function GeneralSettings({
         />
       </SettingRow>
 
-      <SettingRow label={t("settings.general.language")} description={t("settings.general.languageDesc")}>
+      <SettingRow
+        label={t("settings.general.language")}
+        description={t("settings.general.languageDesc")}
+      >
         <SegmentedControl
           value={settings.language}
           options={[
@@ -124,21 +130,30 @@ function GeneralSettings({
         />
       </SettingRow>
 
-      <SettingRow label={t("settings.general.shortcut")} description={t("settings.general.shortcutDesc")}>
+      <SettingRow
+        label={t("settings.general.shortcut")}
+        description={t("settings.general.shortcutDesc")}
+      >
         <ShortcutRecorder
           value={settings.shortcut}
           onChange={(v) => updateSetting("shortcut", v)}
         />
       </SettingRow>
 
-      <SettingRow label={t("settings.general.autoStart")} description={t("settings.general.autoStartDesc")}>
+      <SettingRow
+        label={t("settings.general.autoStart")}
+        description={t("settings.general.autoStartDesc")}
+      >
         <Switch
           checked={settings.auto_start === "true"}
           onCheckedChange={(v) => updateSetting("auto_start", v ? "true" : "false")}
         />
       </SettingRow>
 
-      <SettingRow label={t("settings.general.closeOnBlur")} description={t("settings.general.closeOnBlurDesc")}>
+      <SettingRow
+        label={t("settings.general.closeOnBlur")}
+        description={t("settings.general.closeOnBlurDesc")}
+      >
         <Switch
           checked={settings.close_on_blur === "true"}
           onCheckedChange={(v) => updateSetting("close_on_blur", v ? "true" : "false")}
@@ -278,7 +293,11 @@ function PrivacySettings() {
             {t("settings.privacy.accessibilityDesc")}
           </p>
           <button
-            onClick={() => invoke("open_url", { url: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" })}
+            onClick={() =>
+              invoke("open_url", {
+                url: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+              })
+            }
             className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
           >
             <ChevronRight size={12} />
@@ -298,7 +317,17 @@ function PrivacySettings() {
 
 function UpdateCheckButton() {
   const { t } = useTranslation();
-  const { status, version, progress, relaunchFailed, checkForUpdate, downloadAndInstall, retryDownload, relaunch, dismissError } = useUpdateStore();
+  const {
+    status,
+    version,
+    progress,
+    relaunchFailed,
+    checkForUpdate,
+    downloadAndInstall,
+    retryDownload,
+    relaunch,
+    dismissError,
+  } = useUpdateStore();
   const [showUpToDate, setShowUpToDate] = useState(false);
 
   const handleCheck = async () => {
@@ -313,9 +342,7 @@ function UpdateCheckButton() {
 
   if (status === "ready") {
     if (relaunchFailed) {
-      return (
-        <span className="text-sm text-warning/80">{t("update.restartManually")}</span>
-      );
+      return <span className="text-sm text-warning/80">{t("update.restartManually")}</span>;
     }
     return (
       <Button size="sm" className="gap-1.5" onClick={relaunch}>
@@ -388,9 +415,9 @@ function AboutSettings() {
   const { settings, updateSetting } = useSettingsStore();
 
   useEffect(() => {
-    import("@tauri-apps/api/app").then((mod) =>
-      mod.getVersion().then(setVersion)
-    ).catch(() => setVersion("dev"));
+    import("@tauri-apps/api/app")
+      .then((mod) => mod.getVersion().then(setVersion))
+      .catch(() => setVersion("dev"));
   }, []);
 
   return (
@@ -400,7 +427,9 @@ function AboutSettings() {
       <Card className="border-border/50 bg-card/60 py-0">
         <CardContent className="p-5 text-center space-y-3">
           <h3 className="text-xl font-bold">{t("app.name")}</h3>
-          <p className="text-sm text-muted-foreground">{t("app.version", { version: version || "..." })}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("app.version", { version: version || "..." })}
+          </p>
           <p className="text-xs text-muted-foreground/80">{t("app.description")}</p>
           <UpdateCheckButton />
         </CardContent>
@@ -421,12 +450,32 @@ function AboutSettings() {
 
       <Card className="border-border/50 bg-card/60 py-0 overflow-hidden">
         {[
-          { label: t("settings.about.homepage"), value: "recopy.pages.dev", link: "https://recopy.pages.dev" },
-          { label: t("settings.about.repository"), value: "GitHub", link: "https://github.com/shiqkuangsan/Recopy" },
-          { label: t("settings.about.feedback"), value: t("settings.about.reportIssue"), link: "https://github.com/shiqkuangsan/Recopy/issues" },
-          { label: t("settings.about.author"), value: "shiqkuangsan", link: "https://github.com/shiqkuangsan" },
+          {
+            label: t("settings.about.homepage"),
+            value: "recopy.pages.dev",
+            link: "https://recopy.pages.dev",
+          },
+          {
+            label: t("settings.about.repository"),
+            value: "GitHub",
+            link: "https://github.com/shiqkuangsan/Recopy",
+          },
+          {
+            label: t("settings.about.feedback"),
+            value: t("settings.about.reportIssue"),
+            link: "https://github.com/shiqkuangsan/Recopy/issues",
+          },
+          {
+            label: t("settings.about.author"),
+            value: "shiqkuangsan",
+            link: "https://github.com/shiqkuangsan",
+          },
           { label: t("settings.about.license"), value: "PolyForm Noncommercial 1.0.0" },
-          { label: "Homebrew", value: t("settings.about.brewAvailable"), link: "https://github.com/shiqkuangsan/homebrew-recopy" },
+          {
+            label: "Homebrew",
+            value: t("settings.about.brewAvailable"),
+            link: "https://github.com/shiqkuangsan/homebrew-recopy",
+          },
         ].map((item, i, arr) => (
           <div
             key={item.label}
@@ -509,7 +558,6 @@ function SegmentedControl({
     </div>
   );
 }
-
 
 function ShortcutRecorder({
   value,

@@ -73,8 +73,7 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
       set({ loading: true });
       try {
         const { filterType } = get();
-        const contentType: string | undefined =
-          filterType === "all" ? undefined : filterType;
+        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
         const items = await invoke<ClipboardItem[]>("get_clipboard_items", {
           contentType,
           limit: 200,
@@ -94,8 +93,7 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
       set({ loading: true });
       try {
         const { filterType } = get();
-        const contentType: string | undefined =
-          filterType === "all" ? undefined : filterType;
+        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
         const items = await invoke<ClipboardItem[]>("search_clipboard_items", {
           query,
           contentType,
@@ -142,8 +140,7 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
       set({ loading: true });
       try {
         const { filterType } = get();
-        const contentType: string | undefined =
-          filterType === "all" ? undefined : filterType;
+        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
         const items = await invoke<ClipboardItem[]>("get_favorited_items", {
           contentType,
           limit: 200,

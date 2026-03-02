@@ -215,7 +215,8 @@ export function BrandLogo() {
             style={{
               width: "132px",
               height: "64px",
-              background: "radial-gradient(circle, rgba(255,244,214,0.65) 0%, rgba(255,244,214,0.08) 38%, rgba(255,244,214,0) 72%)",
+              background:
+                "radial-gradient(circle, rgba(255,244,214,0.65) 0%, rgba(255,244,214,0.08) 38%, rgba(255,244,214,0) 72%)",
               zIndex: 0,
               animation: `neko-ascension-shockwave ${ASCENSION_DURATION}ms ease-out forwards`,
             }}
@@ -268,12 +269,14 @@ export function BrandLogo() {
           <span
             key={`rune-${i}`}
             className="absolute left-1/2 top-1/2 pointer-events-none text-[9px] text-zinc-100/85"
-            style={{
-              "--r-angle": r.angle,
-              "--r-radius": r.radius,
-              zIndex: 18,
-              animation: `neko-ascension-rune ${ASCENSION_DURATION}ms linear ${r.delay} forwards`,
-            } as React.CSSProperties}
+            style={
+              {
+                "--r-angle": r.angle,
+                "--r-radius": r.radius,
+                zIndex: 18,
+                animation: `neko-ascension-rune ${ASCENSION_DURATION}ms linear ${r.delay} forwards`,
+              } as React.CSSProperties
+            }
           >
             {r.char}
           </span>
@@ -286,11 +289,13 @@ export function BrandLogo() {
           <span
             key={i}
             className="absolute top-0 pointer-events-none text-[10px]"
-            style={{
-              left: p.left,
-              "--sway": p.sway,
-              animation: `neko-particle-rise 1.6s ease-out ${p.delay} infinite`,
-            } as React.CSSProperties}
+            style={
+              {
+                left: p.left,
+                "--sway": p.sway,
+                animation: `neko-particle-rise 1.6s ease-out ${p.delay} infinite`,
+              } as React.CSSProperties
+            }
           >
             {p.char}
           </span>

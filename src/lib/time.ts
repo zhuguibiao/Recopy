@@ -24,9 +24,7 @@ export function dateGroupLabel(dateStr: string): string {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const itemDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor(
-    (today.getTime() - itemDay.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const diffDays = Math.floor((today.getTime() - itemDay.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return "time.today";
   if (diffDays < 7) return "time.thisWeek";

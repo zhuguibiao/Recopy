@@ -39,7 +39,7 @@ describe("ImageCard", () => {
 
   it("renders placeholder when no thumbnail", () => {
     const { container } = render(
-      <ImageCard item={mockItem()} selected={false} onClick={vi.fn()} />
+      <ImageCard item={mockItem()} selected={false} onClick={vi.fn()} />,
     );
     // No img element (thumbnail not loaded yet, invoke returns null)
     expect(container.querySelector("img")).toBeNull();
@@ -47,16 +47,14 @@ describe("ImageCard", () => {
 
   it("renders thumbnail image when loaded", async () => {
     // 1x1 transparent PNG bytes
-    const pngBytes = [
-      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
-    ];
+    const pngBytes = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82];
     mockedInvoke.mockImplementation((cmd: string) => {
       if (cmd === "get_thumbnail") return Promise.resolve(pngBytes);
       return Promise.resolve(null);
     });
 
     const { container } = render(
-      <ImageCard item={mockItem()} selected={false} onClick={vi.fn()} />
+      <ImageCard item={mockItem()} selected={false} onClick={vi.fn()} />,
     );
 
     // Wait for async thumbnail load

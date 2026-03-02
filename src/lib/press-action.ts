@@ -1,8 +1,4 @@
-import type {
-  KeyboardEventHandler,
-  MouseEventHandler,
-  PointerEventHandler,
-} from "react";
+import type { KeyboardEventHandler, MouseEventHandler, PointerEventHandler } from "react";
 
 interface PressActionOptions {
   preventDefaultOnPointerDown?: boolean;
@@ -33,10 +29,7 @@ export function createPressActionHandlers<T extends HTMLElement>(
   action: () => void,
   options: PressActionOptions = {},
 ): PressActionHandlers<T> {
-  const {
-    preventDefaultOnPointerDown = true,
-    enableKeyboardHandler = false,
-  } = options;
+  const { preventDefaultOnPointerDown = true, enableKeyboardHandler = false } = options;
 
   const handlers: PressActionHandlers<T> = {
     onPointerDown: (event) => {

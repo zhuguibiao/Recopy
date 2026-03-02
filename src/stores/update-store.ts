@@ -1,13 +1,7 @@
 import { create } from "zustand";
 import type { Update, DownloadEvent } from "@tauri-apps/plugin-updater";
 
-export type UpdateStatus =
-  | "idle"
-  | "checking"
-  | "available"
-  | "downloading"
-  | "ready"
-  | "error";
+export type UpdateStatus = "idle" | "checking" | "available" | "downloading" | "ready" | "error";
 
 interface UpdateState {
   status: UpdateStatus;

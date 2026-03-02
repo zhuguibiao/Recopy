@@ -13,9 +13,7 @@ interface RichTextCardProps {
 export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
   const { t } = useTranslation();
   const preview =
-    item.plain_text.length > 300
-      ? item.plain_text.slice(0, 300) + "..."
-      : item.plain_text;
+    item.plain_text.length > 300 ? item.plain_text.slice(0, 300) + "..." : item.plain_text;
   const pressHandlers = createPressActionHandlers<HTMLDivElement>(onClick, {
     enableKeyboardHandler: true,
   });
@@ -29,11 +27,7 @@ export function RichTextCard({ item, selected, onClick }: RichTextCardProps) {
         ${selected ? "border-primary bg-selected" : "border-border/50 bg-card/60 hover:border-muted-foreground/30 hover:bg-card/80"}`}
     >
       {item.is_favorited && (
-        <Star
-          className="absolute top-2 right-2 text-yellow-500"
-          size={14}
-          fill="currentColor"
-        />
+        <Star className="absolute top-2 right-2 text-yellow-500" size={14} fill="currentColor" />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <FileText size={13} />

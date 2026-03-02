@@ -43,7 +43,7 @@ export function ItemContextMenu({ item, children }: ItemContextMenuProps) {
   const handleOpenInBrowser = () => {
     if (item.content_type === "link" && item.plain_text) {
       invoke("open_url", { url: item.plain_text }).catch((e) =>
-        console.error("Failed to open URL:", e)
+        console.error("Failed to open URL:", e),
       );
     }
   };

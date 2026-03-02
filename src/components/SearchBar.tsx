@@ -41,16 +41,15 @@ export function SearchBar() {
 
   return (
     <div className="relative flex items-center w-64">
-      <Search
-        size={14}
-        className="absolute left-2.5 text-muted-foreground pointer-events-none"
-      />
+      <Search size={14} className="absolute left-2.5 text-muted-foreground pointer-events-none" />
       <Input
         ref={inputRef}
         type="text"
         value={searchQuery}
         onChange={(e) => handleChange(e.target.value)}
-        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionStart={() => {
+          composingRef.current = true;
+        }}
         onCompositionEnd={(e) => {
           composingRef.current = false;
           triggerSearch(e.currentTarget.value);

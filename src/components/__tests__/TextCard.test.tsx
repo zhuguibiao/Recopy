@@ -27,7 +27,7 @@ describe("TextCard", () => {
   it("truncates long text", () => {
     const longText = "A".repeat(400);
     render(
-      <TextCard item={mockItem({ plain_text: longText })} selected={false} onClick={vi.fn()} />
+      <TextCard item={mockItem({ plain_text: longText })} selected={false} onClick={vi.fn()} />,
     );
     const pre = screen.getByText(/^A+\.\.\.$/);
     expect(pre.textContent!.length).toBeLessThan(400);
@@ -35,7 +35,7 @@ describe("TextCard", () => {
 
   it("shows favorite star when is_favorited", () => {
     const { container } = render(
-      <TextCard item={mockItem({ is_favorited: true })} selected={false} onClick={vi.fn()} />
+      <TextCard item={mockItem({ is_favorited: true })} selected={false} onClick={vi.fn()} />,
     );
     // Star icon should be present (lucide renders svg)
     const svg = container.querySelector("svg.text-yellow-500");

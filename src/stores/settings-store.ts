@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { enable as enableAutostart, disable as disableAutostart } from "@tauri-apps/plugin-autostart";
+import {
+  enable as enableAutostart,
+  disable as disableAutostart,
+} from "@tauri-apps/plugin-autostart";
 import i18n from "../i18n";
 
 export type Theme = "dark" | "light" | "system";
@@ -51,9 +54,7 @@ interface SettingsState {
 function applyTheme(theme: Theme) {
   const html = document.documentElement;
   if (theme === "system") {
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     html.setAttribute("data-theme", prefersDark ? "dark" : "light");
   } else {
     html.setAttribute("data-theme", theme);
@@ -82,16 +83,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         auto_start: raw.auto_start ?? DEFAULT_SETTINGS.auto_start,
         theme: (raw.theme as Theme) ?? DEFAULT_SETTINGS.theme,
         language: raw.language ?? DEFAULT_SETTINGS.language,
-        retention_policy:
-          raw.retention_policy ?? DEFAULT_SETTINGS.retention_policy,
+        retention_policy: raw.retention_policy ?? DEFAULT_SETTINGS.retention_policy,
         retention_days: raw.retention_days ?? DEFAULT_SETTINGS.retention_days,
-        retention_count:
-          raw.retention_count ?? DEFAULT_SETTINGS.retention_count,
-        max_item_size_mb:
-          raw.max_item_size_mb ?? DEFAULT_SETTINGS.max_item_size_mb,
+        retention_count: raw.retention_count ?? DEFAULT_SETTINGS.retention_count,
+        max_item_size_mb: raw.max_item_size_mb ?? DEFAULT_SETTINGS.max_item_size_mb,
         close_on_blur: raw.close_on_blur ?? DEFAULT_SETTINGS.close_on_blur,
-        update_check_interval:
-          raw.update_check_interval ?? DEFAULT_SETTINGS.update_check_interval,
+        update_check_interval: raw.update_check_interval ?? DEFAULT_SETTINGS.update_check_interval,
       };
       set({ settings, loaded: true });
       applyTheme(settings.theme);
@@ -178,14 +175,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
 // Listen for system theme changes when theme is "system"
 if (typeof window !== "undefined") {
-  window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => {
-      const { settings } = useSettingsStore.getState();
-      if (settings.theme === "system") {
-        applyTheme("system");
-      }
-    });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    const { settings } = useSettingsStore.getState();
+    if (settings.theme === "system") {
+      applyTheme("system");
+    }
+  });
 
   // Listen for system language changes when language is "system"
   window.addEventListener("languagechange", () => {
@@ -194,5 +189,4 @@ if (typeof window !== "undefined") {
       applyLanguage("system");
     }
   });
-
 }

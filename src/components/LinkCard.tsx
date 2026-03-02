@@ -54,7 +54,9 @@ export function LinkCard({ item, selected, onClick }: LinkCardProps) {
       role="button"
       tabIndex={0}
       onPointerDown={handlePointerDown}
-      onClick={(e) => { if (e.detail === 0) onClick(); }}
+      onClick={(e) => {
+        if (e.detail === 0) onClick();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -71,19 +73,13 @@ export function LinkCard({ item, selected, onClick }: LinkCardProps) {
         ${selected ? "border-primary bg-selected" : "border-border/50 bg-card/60 hover:border-muted-foreground/30 hover:bg-card/80"}`}
     >
       {item.is_favorited && (
-        <Star
-          className="absolute top-2 right-2 text-yellow-500"
-          size={14}
-          fill="currentColor"
-        />
+        <Star className="absolute top-2 right-2 text-yellow-500" size={14} fill="currentColor" />
       )}
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Globe size={13} />
         <span className="text-sm">{t("card.link")}</span>
       </div>
-      {hostname && (
-        <div className="text-sm text-foreground/70 truncate">{hostname}</div>
-      )}
+      {hostname && <div className="text-sm text-foreground/70 truncate">{hostname}</div>}
       <pre
         title={url}
         className={`whitespace-pre-wrap break-all text-sm font-mono leading-relaxed line-clamp-3 flex-1 min-h-0 transition-colors

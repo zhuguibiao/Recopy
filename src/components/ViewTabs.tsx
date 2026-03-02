@@ -19,7 +19,7 @@ export function ViewTabs() {
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const pressHandlers = createPressActionHandlers<HTMLButtonElement>(() =>
-          setViewMode(tab.value)
+          setViewMode(tab.value),
         );
         return (
           <button

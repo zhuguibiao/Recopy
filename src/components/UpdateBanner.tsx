@@ -73,11 +73,7 @@ export function UpdateBanner() {
 
   if (status === "ready") {
     if (relaunchFailed) {
-      return (
-        <span className="text-xs text-warning/80">
-          {t("update.restartManually")}
-        </span>
-      );
+      return <span className="text-xs text-warning/80">{t("update.restartManually")}</span>;
     }
     return (
       <button
