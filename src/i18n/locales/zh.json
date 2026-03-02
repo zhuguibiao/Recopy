@@ -93,6 +93,8 @@
       "accessibility": "辅助功能权限 (macOS)",
       "accessibilityDesc": "Recopy 需要辅助功能权限来模拟粘贴 (Cmd+V)。如果没有此权限，内容会被复制到剪贴板但不会自动粘贴。",
       "accessibilityPath": "系统设置 → 隐私与安全 → 辅助功能 → 启用 Recopy",
+      "dataStorage": "数据存储",
+      "dataStorageDesc": "所有数据 100% 存储在本地 SQLite 数据库中，没有任何云同步功能，也不会发起任何网络请求（除自动检查更新外）。删除条目时，对应的本地文件也会一并清除。",
       "exclusionList": "应用排除列表",
       "exclusionListDesc": "这些应用的剪贴板内容将不会被记录（即将推出）",
       "comingSoon": "即将推出"

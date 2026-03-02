@@ -14,6 +14,7 @@ import {
   Moon,
   Monitor,
   ChevronRight,
+  ChevronDown,
   Globe,
   ExternalLink,
   RefreshCw,
@@ -164,17 +165,14 @@ function GeneralSettings({
 }
 
 function HistorySettings({
-  settings: _settings,
-  updateSetting: _updateSetting,
+  settings,
+  updateSetting,
   clearHistory,
 }: {
   settings: AppSettings;
   updateSetting: (key: keyof AppSettings, value: string) => Promise<void>;
   clearHistory: () => Promise<number>;
 }) {
-  // Aliased as _settings/_updateSetting: used by commented-out retention/maxSize UI (FR-018, FR-008)
-  void _settings;
-  void _updateSetting;
   const { t } = useTranslation();
   const [confirmClear, setConfirmClear] = useState(false);
   const [cleared, setCleared] = useState<number | null>(null);
@@ -194,8 +192,10 @@ function HistorySettings({
     <div className="space-y-1">
       <SectionTitle>{t("settings.history.title")}</SectionTitle>
 
-      {/* Hidden until FR-018 is implemented: retention policy cleanup is never triggered */}
-      {/* <SettingRow label={t("settings.history.retention")} description={t("settings.history.retentionDesc")}>
+      <SettingRow
+        label={t("settings.history.retention")}
+        description={t("settings.history.retentionDesc")}
+      >
         <div className="relative">
           <select
             value={settings.retention_policy}
@@ -206,12 +206,18 @@ function HistorySettings({
             <option value="days">{t("settings.history.keepDays")}</option>
             <option value="count">{t("settings.history.keepCount")}</option>
           </select>
-          <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <ChevronDown
+            size={13}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
         </div>
       </SettingRow>
 
       {settings.retention_policy === "days" && (
-        <SettingRow label={t("settings.history.retentionDays")} description={t("settings.history.retentionDaysDesc")}>
+        <SettingRow
+          label={t("settings.history.retentionDays")}
+          description={t("settings.history.retentionDaysDesc")}
+        >
           <input
             type="number"
             min="1"
@@ -224,7 +230,10 @@ function HistorySettings({
       )}
 
       {settings.retention_policy === "count" && (
-        <SettingRow label={t("settings.history.maxItems")} description={t("settings.history.maxItemsDesc")}>
+        <SettingRow
+          label={t("settings.history.maxItems")}
+          description={t("settings.history.maxItemsDesc")}
+        >
           <input
             type="number"
             min="10"
@@ -234,10 +243,12 @@ function HistorySettings({
             className="bg-input/60 text-foreground border border-border/50 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </SettingRow>
-      )} */}
+      )}
 
-      {/* Hidden until FR-008 is implemented */}
-      {/* <SettingRow label={t("settings.history.maxSize")} description={t("settings.history.maxSizeDesc")}>
+      <SettingRow
+        label={t("settings.history.maxSize")}
+        description={t("settings.history.maxSizeDesc")}
+      >
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -249,7 +260,7 @@ function HistorySettings({
           />
           <span className="text-xs text-muted-foreground">MB</span>
         </div>
-      </SettingRow> */}
+      </SettingRow>
 
       <SettingRow label={t("settings.history.clear")} description={t("settings.history.clearDesc")}>
         <Button
@@ -304,6 +315,18 @@ function PrivacySettings() {
             {t("settings.privacy.accessibilityPath")}
             <ExternalLink size={11} />
           </button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 bg-card/60 py-0">
+        <CardContent className="p-4 space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <Info size={15} className="text-primary" />
+            {t("settings.privacy.dataStorage")}
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t("settings.privacy.dataStorageDesc")}
+          </p>
         </CardContent>
       </Card>
 
