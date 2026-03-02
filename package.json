@@ -20,6 +20,9 @@
     "src/**/*.{ts,tsx}": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "src-tauri/src/**/*.rs": [
+      "cargo fmt --"
     ]
   },
   "license": "PolyForm-Noncommercial-1.0.0",
