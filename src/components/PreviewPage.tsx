@@ -208,10 +208,25 @@ function RichTextPreview({ html, fallback }: { html?: string; fallback: string }
     ALLOWED_ATTR: ["href", "src", "alt", "class", "style"],
   });
 
+  // Strip background-related inline styles to prevent partial highlight artifacts
+  // (e.g. VS Code copies HTML with fixed-width background colors that only cover
+  // part of the preview width, creating a visual split)
+  const cleaned = sanitized.replace(/style="([^"]*)"/g, (_, styles: string) => {
+    const filtered = styles
+      .split(";")
+      .filter((prop) => {
+        const name = prop.split(":")[0]?.trim().toLowerCase() ?? "";
+        return !name.startsWith("background");
+      })
+      .join(";")
+      .trim();
+    return filtered ? `style="${filtered}"` : "";
+  });
+
   return (
     <div
       className="text-sm text-foreground prose prose-sm max-w-none"
-      dangerouslySetInnerHTML={{ __html: sanitized }}
+      dangerouslySetInnerHTML={{ __html: cleaned }}
     />
   );
 }
