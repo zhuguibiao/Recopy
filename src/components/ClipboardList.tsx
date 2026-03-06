@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useClipboardStore } from "../stores/clipboard-store";
+import { useSettingsStore } from "../stores/settings-store";
 import { ClipboardCard } from "./ClipboardCard";
 import { dateGroupLabel } from "../lib/time";
 import { Clipboard } from "lucide-react";
@@ -18,6 +19,8 @@ export function ClipboardList() {
   const selectedIndex = useClipboardStore((s) => s.selectedIndex);
   const setSelectedIndex = useClipboardStore((s) => s.setSelectedIndex);
   const loading = useClipboardStore((s) => s.loading);
+  const panelPosition = useSettingsStore((s) => s.settings.panel_position);
+  const isVertical = panelPosition === "left" || panelPosition === "right";
   const selectedRef = useRef<HTMLDivElement>(null);
 
   // Group items by date
@@ -80,28 +83,63 @@ export function ClipboardList() {
     );
   }
 
+  // Top mode: reverse group order so "Today" appears at the bottom (closest to workspace).
+  // flex-col-reverse also anchors scroll to the bottom, showing newest items first.
+  const isReversed = panelPosition === "top";
+
   return (
-    <div className="h-full overflow-y-auto no-scrollbar">
-      {groups.map((group) => (
-        <div key={group.label} className="mb-1">
-          <div className="text-xs font-medium text-muted-foreground px-1 py-1">
+    <div
+      className={`h-full overflow-y-auto no-scrollbar ${isReversed ? "flex flex-col-reverse" : "pb-4"}`}
+    >
+      {/* Spacer at scroll-end for reversed mode (visually at top due to flex-col-reverse) */}
+      {isReversed && <div className="shrink-0 h-4" />}
+      {groups.map((group, groupIdx) => (
+        <div
+          key={group.label}
+          className={
+            isVertical
+              ? `mb-2 ${groupIdx > 0 ? "mt-2 pt-2 border-t border-border/30" : ""}`
+              : "mb-1"
+          }
+        >
+          <div
+            className={`text-xs font-medium text-muted-foreground px-1 ${isVertical ? "py-1.5" : "py-1"}`}
+          >
             {t(group.label)}
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1" onWheel={onRowWheel}>
-            {group.items.map(({ item, flatIndex }) => (
-              <div
-                key={item.id}
-                ref={flatIndex === selectedIndex ? selectedRef : undefined}
-                className="shrink-0 w-[300px] h-[260px]"
-              >
-                <ClipboardCard
-                  item={item}
-                  selected={flatIndex === selectedIndex}
-                  onClick={() => setSelectedIndex(flatIndex)}
-                />
-              </div>
-            ))}
-          </div>
+          {isVertical ? (
+            <div className="flex flex-col gap-3 pb-1">
+              {group.items.map(({ item, flatIndex }) => (
+                <div
+                  key={item.id}
+                  ref={flatIndex === selectedIndex ? selectedRef : undefined}
+                  className="w-full h-[180px]"
+                >
+                  <ClipboardCard
+                    item={item}
+                    selected={flatIndex === selectedIndex}
+                    onClick={() => setSelectedIndex(flatIndex)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1" onWheel={onRowWheel}>
+              {group.items.map(({ item, flatIndex }) => (
+                <div
+                  key={item.id}
+                  ref={flatIndex === selectedIndex ? selectedRef : undefined}
+                  className="shrink-0 w-[300px] h-[260px]"
+                >
+                  <ClipboardCard
+                    item={item}
+                    selected={flatIndex === selectedIndex}
+                    onClick={() => setSelectedIndex(flatIndex)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

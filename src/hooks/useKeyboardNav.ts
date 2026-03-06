@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useClipboardStore } from "../stores/clipboard-store";
+import { useSettingsStore } from "../stores/settings-store";
 import { useCopyHud } from "../components/CopyHud";
 import { pasteItem, copyToClipboard } from "../lib/paste";
 import { dateGroupLabel } from "../lib/time";
@@ -14,6 +15,8 @@ export function useKeyboardNav() {
   const items = useClipboardStore((s) => s.items);
   const selectedIndex = useClipboardStore((s) => s.selectedIndex);
   const setSelectedIndex = useClipboardStore((s) => s.setSelectedIndex);
+  const panelPosition = useSettingsStore((s) => s.settings.panel_position);
+  const isVertical = panelPosition === "left" || panelPosition === "right";
   const previewOpenRef = useRef(false);
 
   // Compute the first flat-index of each date group for up/down navigation.
@@ -143,38 +146,56 @@ export function useKeyboardNav() {
       switch (e.key) {
         case "ArrowRight": {
           e.preventDefault();
-          setSelectedIndex(Math.min(selectedIndex + 1, items.length - 1));
+          if (!isVertical) {
+            setSelectedIndex(Math.min(selectedIndex + 1, items.length - 1));
+          }
           break;
         }
         case "ArrowLeft": {
           e.preventDefault();
-          setSelectedIndex(Math.max(selectedIndex - 1, 0));
+          if (!isVertical) {
+            setSelectedIndex(Math.max(selectedIndex - 1, 0));
+          }
           break;
         }
         case "ArrowDown": {
           e.preventDefault();
-          // Jump to the first item of the next date group
-          const curGroup = groupStartIndices.findIndex((start, i) => {
-            const nextStart = groupStartIndices[i + 1] ?? items.length;
-            return selectedIndex >= start && selectedIndex < nextStart;
-          });
-          if (curGroup >= 0 && curGroup < groupStartIndices.length - 1) {
-            setSelectedIndex(groupStartIndices[curGroup + 1]);
+          if (isVertical) {
+            // Linear: move to next card
+            setSelectedIndex(Math.min(selectedIndex + 1, items.length - 1));
+          } else {
+            // Jump to the first item of the next date group
+            const curGroup = groupStartIndices.findIndex((start, i) => {
+              const nextStart = groupStartIndices[i + 1] ?? items.length;
+              return selectedIndex >= start && selectedIndex < nextStart;
+            });
+            if (curGroup >= 0 && curGroup < groupStartIndices.length - 1) {
+              setSelectedIndex(groupStartIndices[curGroup + 1]);
+            }
           }
           break;
         }
         case "ArrowUp": {
           e.preventDefault();
-          // Jump to the first item of the previous date group
-          const curGrp = groupStartIndices.findIndex((start, i) => {
-            const nextStart = groupStartIndices[i + 1] ?? items.length;
-            return selectedIndex >= start && selectedIndex < nextStart;
-          });
-          if (curGrp > 0) {
-            setSelectedIndex(groupStartIndices[curGrp - 1]);
-          } else if (curGrp === 0) {
-            // Already at first group — focus search input
-            document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+          if (isVertical) {
+            // Linear: move to previous card, or focus search at top
+            if (selectedIndex > 0) {
+              setSelectedIndex(selectedIndex - 1);
+            } else {
+              document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+            }
+          } else {
+            // Jump to the first item of the previous date group
+            const curGrp = groupStartIndices.findIndex((start, i) => {
+              const nextStart = groupStartIndices[i + 1] ?? items.length;
+              return selectedIndex >= start && selectedIndex < nextStart;
+            });
+            if (curGrp > 0) {
+              setSelectedIndex(groupStartIndices[curGrp - 1]);
+            } else if (curGrp === 0) {
+              // Already at first group — focus search input
+              document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+            }
           }
           break;
         }
@@ -191,7 +212,15 @@ export function useKeyboardNav() {
         }
       }
     },
-    [items, selectedIndex, setSelectedIndex, groupStartIndices, openPreview, closePreview],
+    [
+      items,
+      selectedIndex,
+      setSelectedIndex,
+      groupStartIndices,
+      isVertical,
+      openPreview,
+      closePreview,
+    ],
   );
 
   useEffect(() => {

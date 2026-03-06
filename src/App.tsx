@@ -118,8 +118,8 @@ function MainApp() {
     };
   }, []);
 
-  // Listen for show event to replay slide-up animation and refresh data.
-  // Payload carries settings (theme, language) read by Rust from DB — no extra IPC needed.
+  // Listen for show event to replay entrance animation and refresh data.
+  // Payload carries settings (theme, language, panel_position) read by Rust from DB.
   useEffect(() => {
     const unlisten = listen<ShowEventPayload>("recopy-show", (event) => {
       void onPanelShow();
@@ -127,7 +127,16 @@ function MainApp() {
 
       const el = panelRef.current;
       if (el) {
-        // Content is already in panel-idle state (set on blur), just start animation
+        // Set animation direction based on panel position
+        const offsets: Record<string, string> = {
+          bottom: "translateY(40px)",
+          top: "translateY(-40px)",
+          left: "translateX(-40px)",
+          right: "translateX(40px)",
+        };
+        const pos = event.payload.panel_position ?? "bottom";
+        el.style.setProperty("--panel-offset", offsets[pos] ?? offsets.bottom);
+
         el.classList.remove("panel-idle");
         el.classList.add("panel-enter");
       }
@@ -137,37 +146,69 @@ function MainApp() {
     };
   }, [onPanelShow, syncSettingsFromEvent]);
 
+  const panelPosition = useSettingsStore((s) => s.settings.panel_position);
+  const isVertical = panelPosition === "left" || panelPosition === "right";
+  const isTop = panelPosition === "top";
+
   return (
     <div className="h-screen w-screen flex flex-col">
       <div
         ref={panelRef}
-        className="panel-idle w-full h-full text-foreground flex flex-col font-sans overflow-hidden"
+        className={`panel-idle w-full h-full text-foreground flex font-sans overflow-hidden ${
+          isTop ? "flex-col-reverse" : "flex-col"
+        }`}
       >
-        {/* Drag handle — visual indicator for native top-edge resize */}
-        <div className="shrink-0 flex justify-center pointer-events-none select-none">
-          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mt-0.5 mb-0" />
-        </div>
-
-        {/* Header — single row, centered */}
-        <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
-          <div className="absolute left-4 flex items-center gap-2">
-            <BrandLogo />
-            <span className="translate-y-px">
-              <UpdateBanner />
-            </span>
+        {/* Drag handle — visual indicator for resize edge (hidden in left/right mode) */}
+        {!isVertical && (
+          <div className="shrink-0 flex justify-center pointer-events-none select-none">
+            <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mt-0.5 mb-0" />
           </div>
-          <ViewTabs />
-          <SearchBar />
-          <TypeFilter />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => invoke("open_settings_window")}
-            className="absolute right-4 text-muted-foreground hover:text-foreground hover:bg-overlay"
-          >
-            <Settings size={16} />
-          </Button>
-        </div>
+        )}
+
+        {/* Header */}
+        {isVertical ? (
+          <div className="shrink-0 px-3 pt-2 pb-1 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BrandLogo />
+                <span className="translate-y-px">
+                  <UpdateBanner />
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => invoke("open_settings_window")}
+                className="text-muted-foreground hover:text-foreground hover:bg-overlay"
+              >
+                <Settings size={16} />
+              </Button>
+            </div>
+            <ViewTabs />
+            <TypeFilter />
+            <SearchBar />
+          </div>
+        ) : (
+          <div className="relative flex items-center justify-center gap-3 px-4 pt-3 pb-2 shrink-0">
+            <div className="absolute left-4 flex items-center gap-2">
+              <BrandLogo />
+              <span className="translate-y-px">
+                <UpdateBanner />
+              </span>
+            </div>
+            <ViewTabs />
+            <SearchBar />
+            <TypeFilter />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => invoke("open_settings_window")}
+              className="absolute right-4 text-muted-foreground hover:text-foreground hover:bg-overlay"
+            >
+              <Settings size={16} />
+            </Button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 min-h-0 px-5 pb-1">
