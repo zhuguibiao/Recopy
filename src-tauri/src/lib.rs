@@ -186,13 +186,40 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-/// Show the main window: full-width at bottom of screen, animate in.
+/// Show the main window: position depends on `panel_position` setting.
 pub fn show_main_window(app: &tauri::AppHandle) {
     let Some(window) = app.get_webview_window("main") else {
         return;
     };
 
-    // Position at bottom of primary monitor, spanning full width
+    // Read settings from DB before positioning
+    let pool = app.state::<db::DbPool>();
+    let (theme, language, update_check_interval, panel_position) =
+        tauri::async_runtime::block_on(async {
+            let t = db::queries::get_setting(&pool.0, "theme")
+                .await
+                .ok()
+                .flatten();
+            let l = db::queries::get_setting(&pool.0, "language")
+                .await
+                .ok()
+                .flatten();
+            let u = db::queries::get_setting(&pool.0, "update_check_interval")
+                .await
+                .ok()
+                .flatten();
+            let p = db::queries::get_setting(&pool.0, "panel_position")
+                .await
+                .ok()
+                .flatten();
+            (t, l, u, p)
+        });
+    let theme = theme.unwrap_or_else(|| "dark".to_string());
+    let language = language.unwrap_or_else(|| "system".to_string());
+    let update_check_interval = update_check_interval.unwrap_or_else(|| "weekly".to_string());
+    let panel_position = panel_position.unwrap_or_else(|| "bottom".to_string());
+
+    // Position window based on panel_position setting
     if let Ok(Some(monitor)) = window.current_monitor() {
         let monitor_size = monitor.size();
         let monitor_pos = monitor.position();
@@ -200,52 +227,75 @@ pub fn show_main_window(app: &tauri::AppHandle) {
 
         let screen_w = monitor_size.width as f64 / scale;
         let screen_h = monitor_size.height as f64 / scale;
+        let mon_x = monitor_pos.x as f64 / scale;
+        let mon_y = monitor_pos.y as f64 / scale;
+        let margin = 6.0_f64;
 
-        let margin_x = 6.0_f64;
-        let margin_bottom = 6.0_f64;
-        let win_width = screen_w - margin_x * 2.0;
-        let win_height = 380.0_f64;
+        let (win_w, win_h, x, y, min_w, min_h, max_w, max_h) = match panel_position.as_str() {
+            "top" => {
+                let w = screen_w - margin * 2.0;
+                let h = 420.0;
+                // y=0: overlay menu bar (NSPanel level raised to MainMenu+1)
+                (w, h, mon_x + margin, mon_y, w, 300.0, w, 800.0)
+            }
+            "left" => {
+                let w = 380.0;
+                let h = screen_h - margin * 2.0;
+                (w, h, mon_x + margin, mon_y + margin, w, h, w, h)
+            }
+            "right" => {
+                let w = 380.0;
+                let h = screen_h - margin * 2.0;
+                (
+                    w,
+                    h,
+                    mon_x + screen_w - w - margin,
+                    mon_y + margin,
+                    w,
+                    h,
+                    w,
+                    h,
+                )
+            }
+            _ => {
+                // "bottom" (default)
+                let w = screen_w - margin * 2.0;
+                let h = 380.0;
+                (
+                    w,
+                    h,
+                    mon_x + margin,
+                    mon_y + screen_h - h - margin,
+                    w,
+                    300.0,
+                    w,
+                    800.0,
+                )
+            }
+        };
 
-        let x = monitor_pos.x as f64 / scale + margin_x;
-        let y = monitor_pos.y as f64 / scale + screen_h - win_height - margin_bottom;
-
-        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
-            win_width, win_height,
-        )));
-        // Lock width by setting min/max to the same value; allow height 300–800.
+        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(win_w, win_h)));
         let _ = window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(
-            win_width, 300.0,
+            min_w, min_h,
         ))));
         let _ = window.set_max_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(
-            win_width, 800.0,
+            max_w, max_h,
         ))));
         let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
     }
 
-    // Read settings from DB and sync before showing
-    let pool = app.state::<db::DbPool>();
-    let (theme, language, update_check_interval) = tauri::async_runtime::block_on(async {
-        let t = db::queries::get_setting(&pool.0, "theme")
-            .await
-            .ok()
-            .flatten();
-        let l = db::queries::get_setting(&pool.0, "language")
-            .await
-            .ok()
-            .flatten();
-        let u = db::queries::get_setting(&pool.0, "update_check_interval")
-            .await
-            .ok()
-            .flatten();
-        (t, l, u)
-    });
-    let theme = theme.unwrap_or_else(|| "dark".to_string());
-    let language = language.unwrap_or_else(|| "system".to_string());
-    let update_check_interval = update_check_interval.unwrap_or_else(|| "weekly".to_string());
     commands::clipboard::update_window_effects_for_theme(app, &theme);
 
-    platform::platform_show_window(app);
-    let _ = app.emit("recopy-show", serde_json::json!({ "theme": theme, "language": language, "update_check_interval": update_check_interval }));
+    platform::platform_show_window(app, &panel_position);
+    let _ = app.emit(
+        "recopy-show",
+        serde_json::json!({
+            "theme": theme,
+            "language": language,
+            "update_check_interval": update_check_interval,
+            "panel_position": panel_position,
+        }),
+    );
 }
 
 /// Hide the main window and close preview if open.

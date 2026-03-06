@@ -13,7 +13,7 @@ pub fn init_platform(_app: &tauri::App) -> Result<(), Box<dyn std::error::Error>
     Ok(())
 }
 
-pub fn platform_show_window(app: &tauri::AppHandle) {
+pub fn platform_show_window(app: &tauri::AppHandle, _panel_position: &str) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();

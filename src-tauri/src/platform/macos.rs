@@ -59,10 +59,21 @@ pub fn init_platform(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
 /// Show the panel and make it key window.
 /// Safe to call from any thread — dispatches to main thread.
-pub fn platform_show_window(app: &tauri::AppHandle) {
+/// `panel_position` controls the window level: "top" uses MainMenu+1 to overlay
+/// the macOS menu bar; other positions use MainMenu level (below menu bar).
+pub fn platform_show_window(app: &tauri::AppHandle, panel_position: &str) {
     let app_inner = app.clone();
+    let is_top = panel_position == "top";
     let _ = app.run_on_main_thread(move || {
         if let Ok(panel) = app_inner.get_panel("main") {
+            // Adjust level: top mode overlays menu bar (level 25), others stay below (level 24)
+            let level = if is_top {
+                PanelLevel::MainMenu.value() + 1
+            } else {
+                PanelLevel::MainMenu.value()
+            };
+            panel.set_level(level);
+
             // When showing: join all spaces so panel appears on current Space
             panel.set_collection_behavior(
                 CollectionBehavior::new()
