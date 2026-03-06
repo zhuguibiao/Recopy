@@ -59,7 +59,10 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
 
     setViewMode: (mode: ViewMode) => {
       set({ viewMode: mode, selectedIndex: 0 });
-      if (mode === "history") {
+      const trimmedQuery = get().searchQuery.trim();
+      if (trimmedQuery) {
+        get().searchItems(trimmedQuery);
+      } else if (mode === "history") {
         get().fetchItems();
       } else if (mode === "pins") {
         get().fetchFavorites();
