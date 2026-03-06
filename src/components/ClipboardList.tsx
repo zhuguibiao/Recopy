@@ -42,18 +42,24 @@ export function ClipboardList() {
     return result;
   }, [items]);
 
-  // Convert vertical-only wheel events to horizontal scroll on card rows.
-  // Mouse wheels only produce deltaY, which overflow-x containers ignore.
-  // Trackpad horizontal swipes (deltaX !== 0) and shift+wheel are left
-  // to the browser's native handling.
+  // Convert pure-deltaY wheel events (mouse wheel) to horizontal scroll on card rows.
+  // Trackpad gestures produce deltaX and are handled natively — we only intercept pure deltaY.
+  // At horizontal boundaries, let the event bubble for outer vertical scrolling.
+  const EDGE_EPSILON = 1;
   const onRowWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (el.scrollWidth <= el.clientWidth) return; // nothing to scroll
-    if (e.deltaX !== 0 || e.shiftKey) return; // native horizontal scroll
-    if (e.deltaY !== 0) {
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    }
+    if (e.deltaX !== 0 || e.shiftKey) return; // trackpad / shift+wheel → native
+    if (e.deltaY === 0) return;
+
+    const atLeft = el.scrollLeft <= EDGE_EPSILON;
+    const atRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - EDGE_EPSILON;
+
+    // At boundary and scrolling further in that direction → let vertical scroll bubble
+    if ((atLeft && e.deltaY < 0) || (atRight && e.deltaY > 0)) return;
+
+    e.preventDefault();
+    el.scrollLeft += e.deltaY;
   }, []);
 
   // Auto-scroll selected card into view
