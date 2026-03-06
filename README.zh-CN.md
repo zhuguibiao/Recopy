@@ -1,7 +1,11 @@
 # Recopy
 
 [![GitHub Release](https://img.shields.io/github/v/release/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/shiqkuangsan/Recopy/total)](https://github.com/shiqkuangsan/Recopy/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/stargazers)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/commits)
 [![License](https://img.shields.io/badge/license-PolyForm%20NC%201.0-blue)](LICENSE)
+[![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri-ffc131)](https://v2.tauri.app)
 [![macOS](https://img.shields.io/badge/macOS-supported-brightgreen)](https://github.com/shiqkuangsan/Recopy/releases)
 [![Windows](https://img.shields.io/badge/Windows-supported-brightgreen)](https://github.com/shiqkuangsan/Recopy/releases)
 
@@ -56,6 +60,7 @@ brew upgrade --cask recopy
 - **全类型支持** — 纯文本、富文本、图片、文件、链接
 - **一键召唤** — `Cmd+Shift+V` 呼出面板，方向键导航，Enter 粘贴
 - **空格预览** — 按空格键预览任意条目，Finder 风格缩放动画
+- **灵活布局** — 面板可停靠在屏幕任意边缘（下/上/左/右），适配你的工作流
 - **智能去重** — SHA-256 哈希自动去重，重复内容自动置顶
 - **全文搜索** — FTS5 + trigram 分词，中英文模糊搜索
 - **链接识别** — 自动识别 URL 并显示专属卡片，`Cmd+Click` 可在浏览器打开
@@ -64,7 +69,7 @@ brew upgrade --cask recopy
 - **不抢焦点** — macOS 使用 NSPanel，面板不会抢走前台应用的焦点
 - **复制反馈** — 毛玻璃 HUD 提示，复制操作一目了然
 - **自动更新** — 内置更新检查，应用内下载，一键重启升级
-- **丰富设置** — 主题（深色/浅色/跟随系统）、语言（中/英）、快捷键、开机启动、保留策略
+- **丰富设置** — 主题、语言、快捷键、面板位置、开机启动、保留策略
 - **隐私优先** — 所有数据存储在本地 SQLite，不上传任何内容
 
 ## 快捷键
@@ -85,7 +90,7 @@ brew upgrade --cask recopy
 
 通过面板右上角齿轮图标、托盘菜单或 `Cmd+,` 打开设置。
 
-- **通用** — 主题（深色/浅色/跟随系统）、语言（中/英/跟随系统）、全局快捷键、开机启动、失焦关闭
+- **通用** — 主题（深色/浅色/跟随系统）、语言（中/英/跟随系统）、全局快捷键、面板位置（下/上/左/右）、开机启动、失焦关闭
 - **历史** — 保留策略（无限/按天数/按数量）、最大条目大小（1–100 MB）、清空历史
 - **隐私** — 无障碍权限指引、应用排除列表（即将推出）
 - **关于** — 版本、许可证、技术栈
@@ -165,12 +170,6 @@ Recopy
 3. NSPanel 放弃 key window（焦点回到前台应用）
 4. `osascript` 模拟 Cmd+V，延迟 50ms
 5. 面板隐藏 — 内容无缝粘贴到目标应用
-
-## 路线图
-
-- [x] ~~自动更新~~ — 已在 v1.0.0 通过 tauri-plugin-updater 实现
-- [ ] 来源应用展示（数据层已就绪，卡片 UI 待开发）
-- [ ] 应用排除列表（跳过密码管理器等）
 
 ## 许可证
 

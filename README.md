@@ -1,7 +1,11 @@
 # Recopy
 
 [![GitHub Release](https://img.shields.io/github/v/release/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/shiqkuangsan/Recopy/total)](https://github.com/shiqkuangsan/Recopy/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/stargazers)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/shiqkuangsan/Recopy)](https://github.com/shiqkuangsan/Recopy/commits)
 [![License](https://img.shields.io/badge/license-PolyForm%20NC%201.0-blue)](LICENSE)
+[![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri-ffc131)](https://v2.tauri.app)
 [![macOS](https://img.shields.io/badge/macOS-supported-brightgreen)](https://github.com/shiqkuangsan/Recopy/releases)
 [![Windows](https://img.shields.io/badge/Windows-supported-brightgreen)](https://github.com/shiqkuangsan/Recopy/releases)
 
@@ -56,6 +60,7 @@ Download the latest `.dmg` or `.exe` from the [Releases](https://github.com/shiq
 - **Full-type support** — Plain text, rich text, images, files, and links
 - **Instant recall** — `Cmd+Shift+V` to summon, arrow keys to navigate, Enter to paste
 - **Quick Look preview** — Press Space to preview any item with Finder-style zoom animation
+- **Flexible layout** — Panel docks to any screen edge (bottom/top/left/right), adapts to your workflow
 - **Smart dedup** — SHA-256 hash prevents duplicate entries, bumps latest to top
 - **Full-text search** — FTS5 with trigram tokenizer for Chinese/English fuzzy search
 - **Link detection** — URLs auto-recognized with dedicated cards, `Cmd+Click` to open in browser
@@ -64,7 +69,7 @@ Download the latest `.dmg` or `.exe` from the [Releases](https://github.com/shiq
 - **Non-activating panel** — NSPanel on macOS, never steals focus from your active app
 - **Copy HUD** — Frosted glass feedback overlay when copying to clipboard
 - **Auto-update** — Built-in update checker with in-app download and one-click restart
-- **Configurable** — Theme (dark/light/system), language (en/zh), shortcut, auto-start, retention policy
+- **Configurable** — Theme, language, shortcut, panel position, auto-start, retention policy
 - **Privacy first** — All data stored locally in SQLite, nothing leaves your machine
 
 ## Keyboard Shortcuts
@@ -85,7 +90,7 @@ Download the latest `.dmg` or `.exe` from the [Releases](https://github.com/shiq
 
 Open settings via the gear icon in the panel header, tray menu, or `Cmd+,`.
 
-- **General** — Theme (dark/light/system), language (en/zh/system), global shortcut, auto-start, close-on-blur
+- **General** — Theme (dark/light/system), language (en/zh/system), global shortcut, panel position (bottom/top/left/right), auto-start, close-on-blur
 - **History** — Retention policy (unlimited/days/count), max item size (1–100 MB), clear history
 - **Privacy** — Accessibility permission guide, app exclusion list (coming soon)
 - **About** — Version, license, tech stack
@@ -165,12 +170,6 @@ Recopy
 3. NSPanel resigns key window (returns focus to previous app)
 4. `osascript` simulates Cmd+V with 50ms delay
 5. Panel hides — user sees content pasted seamlessly
-
-## Roadmap
-
-- [x] ~~Auto-update~~ — shipped in v1.0.0 via tauri-plugin-updater
-- [ ] Source app display (data model ready, card UI pending)
-- [ ] App exclusion list (skip password managers, etc.)
 
 ## License
 
