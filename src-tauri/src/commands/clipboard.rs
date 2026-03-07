@@ -254,7 +254,7 @@ async fn write_to_clipboard(
     Ok(())
 }
 
-/// Simulate Cmd+V paste via osascript on macOS.
+/// Simulate Ctrl+V / Cmd+V paste via platform-specific mechanism.
 fn simulate_paste() {
     #[cfg(target_os = "macos")]
     {
@@ -264,6 +264,10 @@ fn simulate_paste() {
             .arg("-e")
             .arg("tell application \"System Events\" to keystroke \"v\" using command down")
             .output();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::simulate_paste_keys();
     }
 }
 
