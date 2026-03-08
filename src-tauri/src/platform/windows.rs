@@ -1,5 +1,5 @@
 use std::sync::{
-    atomic::{AtomicBool, AtomicIsize, Ordering},
+    atomic::{AtomicBool, AtomicIsize, AtomicU32, Ordering},
     OnceLock,
 };
 use tauri::{Emitter, Manager};
@@ -28,16 +28,20 @@ mod win32 {
     pub const SWP_NOSIZE: u32 = 0x0001;
     pub const SWP_NOACTIVATE: u32 = 0x0010;
 
-    // Hook
+    // Hook / messages
     pub const WH_KEYBOARD_LL: i32 = 13;
     pub const WM_KEYDOWN: u32 = 0x0100;
+    pub const WM_KEYUP: u32 = 0x0101;
+    pub const WM_SYSKEYDOWN: u32 = 0x0104;
+    pub const WM_SYSKEYUP: u32 = 0x0105;
+    pub const WM_QUIT: u32 = 0x0012;
 
     // Virtual-key codes
     pub const VK_BACK: u32 = 0x08;
     pub const VK_TAB: u32 = 0x09;
     pub const VK_RETURN: u32 = 0x0D;
-    pub const VK_SHIFT: i32 = 0x10;
-    pub const VK_CONTROL: i32 = 0x11;
+    pub const VK_SHIFT: u32 = 0x10;
+    pub const VK_CONTROL: u32 = 0x11;
     pub const VK_ESCAPE: u32 = 0x1B;
     pub const VK_SPACE: u32 = 0x20;
     pub const VK_LEFT: u32 = 0x25;
@@ -45,6 +49,10 @@ mod win32 {
     pub const VK_RIGHT: u32 = 0x27;
     pub const VK_DOWN: u32 = 0x28;
     pub const VK_DELETE: u32 = 0x2E;
+    pub const VK_LSHIFT: u32 = 0xA0;
+    pub const VK_RSHIFT: u32 = 0xA1;
+    pub const VK_LCONTROL: u32 = 0xA2;
+    pub const VK_RCONTROL: u32 = 0xA3;
     pub const VK_C: u32 = 0x43;
     pub const VK_F: u32 = 0x46;
     pub const VK_V: u32 = 0x56;
@@ -95,6 +103,18 @@ mod win32 {
         }
     }
 
+    /// MSG structure for GetMessage loop.
+    #[repr(C)]
+    pub struct MSG {
+        pub hwnd: HWND,
+        pub message: u32,
+        pub wparam: WPARAM,
+        pub lparam: LPARAM,
+        pub time: u32,
+        pub pt_x: i32,
+        pub pt_y: i32,
+    }
+
     unsafe extern "system" {
         pub fn ShowWindow(hwnd: HWND, n_cmd_show: i32) -> i32;
         pub fn SetWindowPos(
@@ -117,11 +137,13 @@ mod win32 {
         ) -> HHOOK;
         pub fn UnhookWindowsHookEx(hhk: HHOOK) -> i32;
         pub fn CallNextHookEx(hhk: HHOOK, code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT;
-        pub fn GetAsyncKeyState(vkey: i32) -> i16;
         pub fn SendInput(c_inputs: u32, p_inputs: *const KeyboardInputRaw, cb_size: i32) -> u32;
         pub fn GetModuleHandleW(name: *const u16) -> HINSTANCE;
         pub fn GetCurrentProcessId() -> u32;
+        pub fn GetCurrentThreadId() -> u32;
         pub fn GetWindowThreadProcessId(hwnd: HWND, pid: *mut u32) -> u32;
+        pub fn GetMessageW(msg: *mut MSG, hwnd: HWND, filter_min: u32, filter_max: u32) -> i32;
+        pub fn PostThreadMessageW(thread_id: u32, msg: u32, wparam: WPARAM, lparam: LPARAM) -> i32;
     }
 }
 
@@ -140,6 +162,14 @@ static PREV_FOREGROUND: AtomicIsize = AtomicIsize::new(0);
 
 /// HWND of Recopy's main window (cached for the hook callback).
 static MAIN_HWND: AtomicIsize = AtomicIsize::new(0);
+
+/// Thread ID of the dedicated hook message-pump thread (0 = no thread).
+static HOOK_THREAD_ID: AtomicU32 = AtomicU32::new(0);
+
+/// Manually tracked modifier key state (updated by hook callback).
+/// Required because GetAsyncKeyState is unreliable inside hook callbacks.
+static CTRL_DOWN: AtomicBool = AtomicBool::new(false);
+static SHIFT_DOWN: AtomicBool = AtomicBool::new(false);
 
 /// Preview focus guard: skip main's blur while preview is opening.
 static PREVIEW_FOCUS_GUARD: AtomicBool = AtomicBool::new(false);
@@ -286,21 +316,48 @@ pub fn on_window_focused() {
 // Keyboard hook
 // ---------------------------------------------------------------------------
 
+/// Spawn a dedicated thread with a Win32 message pump and install the hook there.
+/// WH_KEYBOARD_LL requires a message loop on the installing thread — tokio worker
+/// threads don't have one, so we must use a dedicated std::thread.
+/// Blocks until the hook is confirmed installed (or fails).
 fn install_keyboard_hook() {
-    // Already installed?
     if is_hook_active() {
         return;
     }
-    unsafe {
+    let (tx, rx) = std::sync::mpsc::sync_channel::<bool>(1);
+    std::thread::spawn(move || unsafe {
+        let thread_id = win32::GetCurrentThreadId();
         let hmod = win32::GetModuleHandleW(std::ptr::null());
         let hook =
             win32::SetWindowsHookExW(win32::WH_KEYBOARD_LL, Some(keyboard_hook_proc), hmod, 0);
-        if hook != 0 {
-            HOOK_HANDLE.store(hook, Ordering::SeqCst);
+        if hook == 0 {
+            let _ = tx.send(false);
+            return;
         }
-    }
+        HOOK_HANDLE.store(hook, Ordering::SeqCst);
+        HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
+        let _ = tx.send(true);
+
+        // Message pump — keeps the hook alive.
+        // GetMessage returns 0 on WM_QUIT, ending the loop.
+        let mut msg: win32::MSG = std::mem::zeroed();
+        while win32::GetMessageW(&mut msg, 0, 0, 0) > 0 {}
+
+        // Cleanup (in case remove_keyboard_hook didn't already clear these)
+        let h = HOOK_HANDLE.swap(0, Ordering::SeqCst);
+        if h != 0 {
+            win32::UnhookWindowsHookEx(h);
+        }
+        HOOK_THREAD_ID.store(0, Ordering::SeqCst);
+        CTRL_DOWN.store(false, Ordering::SeqCst);
+        SHIFT_DOWN.store(false, Ordering::SeqCst);
+    });
+    // Wait for hook installation before returning — ensures is_hook_active()
+    // is accurate immediately after this call.
+    let _ = rx.recv();
 }
 
+/// Unhook immediately (synchronous) and signal the message-pump thread to exit.
 fn remove_keyboard_hook() {
     let handle = HOOK_HANDLE.swap(0, Ordering::SeqCst);
     if handle != 0 {
@@ -308,78 +365,129 @@ fn remove_keyboard_hook() {
             win32::UnhookWindowsHookEx(handle);
         }
     }
+    let tid = HOOK_THREAD_ID.swap(0, Ordering::SeqCst);
+    if tid != 0 {
+        unsafe {
+            win32::PostThreadMessageW(tid, win32::WM_QUIT, 0, 0);
+        }
+    }
+    CTRL_DOWN.store(false, Ordering::SeqCst);
+    SHIFT_DOWN.store(false, Ordering::SeqCst);
 }
 
 /// Low-level keyboard hook procedure.
 /// Intercepts navigation keys and forwards them as `platform-keydown` Tauri
 /// events so the frontend can drive the same logic as native keydown.
+///
+/// Modifier state is tracked manually via CTRL_DOWN / SHIFT_DOWN atomics
+/// because GetAsyncKeyState is unreliable inside hook callbacks (MSDN:
+/// "the hook is called before the async key state is updated").
 unsafe extern "system" fn keyboard_hook_proc(
     code: i32,
     wparam: win32::WPARAM,
     lparam: win32::LPARAM,
 ) -> win32::LRESULT {
-    if code >= 0 && wparam as u32 == win32::WM_KEYDOWN {
-        // Safety-check: only intercept when the foreground window does NOT
-        // belong to Recopy (e.g. settings window open → let keys through).
-        let fg = win32::GetForegroundWindow();
-        let mut fg_pid: u32 = 0;
-        win32::GetWindowThreadProcessId(fg, &mut fg_pid);
-        let our_pid = win32::GetCurrentProcessId();
-        if fg_pid == our_pid {
+    if code < 0 {
+        return win32::CallNextHookEx(0, code, wparam, lparam);
+    }
+
+    let msg = wparam as u32;
+    let is_down = msg == win32::WM_KEYDOWN || msg == win32::WM_SYSKEYDOWN;
+    let is_up = msg == win32::WM_KEYUP || msg == win32::WM_SYSKEYUP;
+
+    if !is_down && !is_up {
+        return win32::CallNextHookEx(0, code, wparam, lparam);
+    }
+
+    let kbd = &*(lparam as *const win32::KBDLLHOOKSTRUCT);
+    let vk = kbd.vk_code;
+
+    // --- Track modifier state (handles both left/right and generic VK codes) ---
+    match vk {
+        win32::VK_CONTROL | win32::VK_LCONTROL | win32::VK_RCONTROL => {
+            CTRL_DOWN.store(is_down, Ordering::SeqCst);
             return win32::CallNextHookEx(0, code, wparam, lparam);
         }
+        win32::VK_SHIFT | win32::VK_LSHIFT | win32::VK_RSHIFT => {
+            SHIFT_DOWN.store(is_down, Ordering::SeqCst);
+            return win32::CallNextHookEx(0, code, wparam, lparam);
+        }
+        _ => {}
+    }
 
-        let kbd = &*(lparam as *const win32::KBDLLHOOKSTRUCT);
-        let vk = kbd.vk_code;
-        let ctrl = win32::GetAsyncKeyState(win32::VK_CONTROL) < 0;
-        let shift = win32::GetAsyncKeyState(win32::VK_SHIFT) < 0;
+    // Only intercept key-down events for navigation
+    if !is_down {
+        return win32::CallNextHookEx(0, code, wparam, lparam);
+    }
 
-        // Map VK to DOM key name (matching KeyboardEvent.key)
-        let key: Option<&str> = match vk {
-            win32::VK_UP => Some("ArrowUp"),
-            win32::VK_DOWN => Some("ArrowDown"),
-            win32::VK_LEFT => Some("ArrowLeft"),
-            win32::VK_RIGHT => Some("ArrowRight"),
-            win32::VK_RETURN => Some("Enter"),
-            win32::VK_SPACE => Some(" "),
-            win32::VK_ESCAPE => Some("Escape"),
-            win32::VK_TAB => Some("Tab"),
-            win32::VK_DELETE => Some("Delete"),
-            win32::VK_BACK => Some("Backspace"),
-            win32::VK_C if ctrl => Some("c"),
-            win32::VK_OEM_COMMA if ctrl => Some(","),
-            win32::VK_F if ctrl => {
-                // Ctrl+F → activate the window so the SearchBar can receive
-                // real keyboard input, then forward the event.
-                remove_keyboard_hook();
-                let main = MAIN_HWND.load(Ordering::SeqCst);
-                if main != 0 {
-                    win32::SetForegroundWindow(main);
-                }
-                if let Some(app) = APP_HANDLE.get() {
-                    let _ = app.emit(
-                        "platform-keydown",
-                        serde_json::json!({"key":"f","ctrlKey":true,"shiftKey":false}),
-                    );
-                }
-                return 1; // consumed
+    // Safety-check: only intercept when the foreground window does NOT
+    // belong to Recopy (e.g. settings window open → let keys through).
+    let fg = win32::GetForegroundWindow();
+    let mut fg_pid: u32 = 0;
+    win32::GetWindowThreadProcessId(fg, &mut fg_pid);
+    if fg_pid == win32::GetCurrentProcessId() {
+        return win32::CallNextHookEx(0, code, wparam, lparam);
+    }
+
+    let ctrl = CTRL_DOWN.load(Ordering::SeqCst);
+    let shift = SHIFT_DOWN.load(Ordering::SeqCst);
+
+    // Map VK to DOM key name (matching KeyboardEvent.key)
+    let key: Option<&str> = match vk {
+        win32::VK_UP => Some("ArrowUp"),
+        win32::VK_DOWN => Some("ArrowDown"),
+        win32::VK_LEFT => Some("ArrowLeft"),
+        win32::VK_RIGHT => Some("ArrowRight"),
+        win32::VK_RETURN => Some("Enter"),
+        win32::VK_SPACE => Some(" "),
+        win32::VK_ESCAPE => Some("Escape"),
+        win32::VK_TAB => Some("Tab"),
+        win32::VK_DELETE => Some("Delete"),
+        win32::VK_BACK => Some("Backspace"),
+        win32::VK_C if ctrl => Some("c"),
+        win32::VK_OEM_COMMA if ctrl => Some(","),
+        win32::VK_F if ctrl => {
+            // Ctrl+F → activate the window so the SearchBar can receive
+            // real keyboard input, then forward the event.
+            // Unhook immediately + post WM_QUIT to exit message pump.
+            let h = HOOK_HANDLE.swap(0, Ordering::SeqCst);
+            if h != 0 {
+                win32::UnhookWindowsHookEx(h);
             }
-            _ => None,
-        };
+            let tid = HOOK_THREAD_ID.swap(0, Ordering::SeqCst);
+            if tid != 0 {
+                win32::PostThreadMessageW(tid, win32::WM_QUIT, 0, 0);
+            }
+            CTRL_DOWN.store(false, Ordering::SeqCst);
+            SHIFT_DOWN.store(false, Ordering::SeqCst);
 
-        if let Some(key_name) = key {
+            let main = MAIN_HWND.load(Ordering::SeqCst);
+            if main != 0 {
+                win32::SetForegroundWindow(main);
+            }
             if let Some(app) = APP_HANDLE.get() {
                 let _ = app.emit(
                     "platform-keydown",
-                    serde_json::json!({
-                        "key": key_name,
-                        "ctrlKey": ctrl,
-                        "shiftKey": shift,
-                    }),
+                    serde_json::json!({"key":"f","ctrlKey":true,"shiftKey":false}),
                 );
             }
-            return 1; // consumed – don't forward to previous app
+            return 1; // consumed
         }
+        _ => None,
+    };
+
+    if let Some(key_name) = key {
+        if let Some(app) = APP_HANDLE.get() {
+            let _ = app.emit(
+                "platform-keydown",
+                serde_json::json!({
+                    "key": key_name,
+                    "ctrlKey": ctrl,
+                    "shiftKey": shift,
+                }),
+            );
+        }
+        return 1; // consumed – don't forward to previous app
     }
 
     win32::CallNextHookEx(0, code, wparam, lparam)
