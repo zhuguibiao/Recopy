@@ -610,6 +610,9 @@ fn setup_blur_hide(app: &tauri::AppHandle) {
             window.on_window_event(move |event| match event {
                 tauri::WindowEvent::Focused(true) => {
                     platform::set_preview_focus_guard(false);
+                    // On Windows: user clicked Recopy → remove keyboard hook
+                    // (webview now receives keyboard input directly).
+                    platform::on_window_focused();
                 }
                 tauri::WindowEvent::Focused(false) => {
                     if platform::is_preview_focus_guard() {

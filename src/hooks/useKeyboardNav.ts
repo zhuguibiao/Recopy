@@ -251,4 +251,26 @@ export function useKeyboardNav() {
       previewState.open = false;
     };
   }, []);
+
+  // Windows non-activating mode: keyboard hook forwards navigation keys as
+  // platform-keydown events. Dispatch them as synthetic KeyboardEvents so the
+  // existing handleKeyDown handler processes them identically.
+  useEffect(() => {
+    const unlisten = listen<{ key: string; ctrlKey: boolean; shiftKey: boolean }>(
+      "platform-keydown",
+      (event) => {
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: event.payload.key,
+            ctrlKey: event.payload.ctrlKey,
+            shiftKey: event.payload.shiftKey,
+            bubbles: true,
+          }),
+        );
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 }

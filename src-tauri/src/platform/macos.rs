@@ -279,6 +279,9 @@ pub fn take_preview_programmatic_hide() -> bool {
     false
 }
 
+#[allow(dead_code)]
+pub fn on_window_focused() {}
+
 /// Resign key window status without hiding.
 /// This returns keyboard focus to the previously active app
 /// so that simulate_paste() sends Cmd+V to the correct target.

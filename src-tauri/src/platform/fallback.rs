@@ -81,6 +81,8 @@ pub fn platform_resign_before_paste(app: &tauri::AppHandle) {
     platform_hide_window(app);
 }
 
+pub fn on_window_focused() {}
+
 pub fn init_hud_panel(_app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
