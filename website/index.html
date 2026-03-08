@@ -163,7 +163,7 @@
             </svg>
           </div>
           <h3 data-en="Instant Recall" data-zh="即时召回">Instant Recall</h3>
-          <p data-en="Cmd+Shift+V to summon, arrow keys to navigate, Enter to paste. That fast." data-zh="Cmd+Shift+V 召唤面板，方向键导航，Enter 粘贴。就这么快。">Cmd+Shift+V to summon, arrow keys to navigate, Enter to paste. That fast.</p>
+          <p data-en="Cmd+Shift+V to summon, arrow keys to navigate, Enter to paste, Space to preview. All from the keyboard." data-zh="Cmd+Shift+V 召唤，方向键导航，Enter 粘贴，Space 预览。全键盘掌控。">Cmd+Shift+V to summon, arrow keys to navigate, Enter to paste, Space to preview. All from the keyboard.</p>
         </div>
         <div class="feature-card" data-blobity>
           <div class="feature-icon">
@@ -190,16 +190,18 @@
             </svg>
           </div>
           <h3 data-en="Full-text Search" data-zh="全文搜索">Full-text Search</h3>
-          <p data-en="FTS5 with trigram tokenizer. Search in Chinese or English, find anything instantly." data-zh="FTS5 + trigram 分词引擎，中英文模糊搜索，瞬间找到。">FTS5 with trigram tokenizer. Search in Chinese or English, find anything instantly.</p>
+          <p data-en="FTS5 with trigram tokenizer. Multi-keyword search across Chinese and English, find anything instantly." data-zh="FTS5 + trigram 分词引擎，多关键词组合搜索，中英文即时查找。">FTS5 with trigram tokenizer. Multi-keyword search across Chinese and English, find anything instantly.</p>
         </div>
         <div class="feature-card" data-blobity>
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M9 21V9"/>
             </svg>
           </div>
-          <h3 data-en="Favorites" data-zh="收藏夹">Favorites</h3>
-          <p data-en="Pin frequently used items for quick access. They won't be auto-cleaned." data-zh="置顶常用条目，快速访问。收藏项不会被自动清理。">Pin frequently used items for quick access. They won't be auto-cleaned.</p>
+          <h3 data-en="Flexible Layout" data-zh="灵活布局">Flexible Layout</h3>
+          <p data-en="Place the panel at the bottom, top, left, or right of your screen. Adapts to your workflow." data-zh="面板可置于屏幕底部、顶部、左侧或右侧，适配你的工作习惯。">Place the panel at the bottom, top, left, or right of your screen. Adapts to your workflow.</p>
         </div>
         <div class="feature-card" data-blobity>
           <div class="feature-icon">
@@ -216,12 +218,13 @@
         <div class="feature-card" data-blobity>
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
-              <circle cx="12" cy="12" r="3"/>
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M12 7v5l4 2"/>
             </svg>
           </div>
-          <h3 data-en="Quick Look" data-zh="快速预览">Quick Look</h3>
-          <p data-en="Press Space to preview any item. Finder-style zoom animation, all content types supported." data-zh="按空格键预览任意条目。Finder 风格缩放动画，支持所有内容类型。">Press Space to preview any item. Finder-style zoom animation, all content types supported.</p>
+          <h3 data-en="Smart Retention" data-zh="智能留存">Smart Retention</h3>
+          <p data-en="Set retention by days, count, or keep everything. Auto-cleanup on launch, favorites are always safe." data-zh="按天数、数量或无限保留。启动时自动清理，收藏项永不删除。">Set retention by days, count, or keep everything. Auto-cleanup on launch, favorites are always safe.</p>
         </div>
         <div class="feature-card" data-blobity>
           <div class="feature-icon">
@@ -344,6 +347,26 @@
             <span data-en="Non-activating NSPanel, never steals focus" data-zh="NSPanel 无焦点面板，不抢焦点">Non-activating NSPanel, never steals focus</span>
           </div>
         </div>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Fixed panel position, one layout for all" data-zh="面板位置固定，千人一面">Fixed panel position, one layout for all</span>
+          </div>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="4-direction layout: bottom, top, left, right" data-zh="四向布局：底部、顶部、左侧、右侧">4-direction layout: bottom, top, left, right</span>
+          </div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell compare-bad">
+            <span class="compare-x">&#10005;</span>
+            <span data-en="Manual cleanup or no control at all" data-zh="手动清理或完全无法管控">Manual cleanup or no control at all</span>
+          </div>
+          <div class="compare-cell compare-good">
+            <span class="compare-check">&#10003;</span>
+            <span data-en="Configurable retention with auto-cleanup on launch" data-zh="可配置保留策略，启动时自动清理">Configurable retention with auto-cleanup on launch</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -395,6 +418,18 @@
             <kbd class="key-lg">⌘</kbd><kbd class="key-lg">F</kbd>
           </div>
           <div class="key-label" data-en="Search" data-zh="搜索">Search</div>
+        </div>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg key-wide">Delete</kbd>
+          </div>
+          <div class="key-label" data-en="Delete item" data-zh="删除条目">Delete item</div>
+        </div>
+        <div class="key-item">
+          <div class="key-combo">
+            <kbd class="key-lg">⌘</kbd><kbd class="key-lg">,</kbd>
+          </div>
+          <div class="key-label" data-en="Settings" data-zh="设置">Settings</div>
         </div>
       </div>
     </div>
