@@ -83,6 +83,7 @@ pub fn platform_resign_before_paste(app: &tauri::AppHandle) {
 
 pub fn on_window_focused() {}
 
+#[allow(dead_code)]
 pub fn is_recopy_foreground() -> bool {
     false
 }
