@@ -77,6 +77,12 @@ pub fn take_preview_programmatic_hide() -> bool {
     PREVIEW_PROGRAMMATIC_HIDE.swap(false, Ordering::SeqCst)
 }
 
+/// Cursor-based monitor detection not available on this platform.
+#[allow(dead_code)]
+pub fn platform_cursor_monitor() -> Option<(f64, f64, f64, f64)> {
+    None
+}
+
 pub fn platform_resign_before_paste(app: &tauri::AppHandle) {
     platform_hide_window(app);
 }

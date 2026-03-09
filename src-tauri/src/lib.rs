@@ -224,16 +224,21 @@ pub fn show_main_window(app: &tauri::AppHandle) {
     let panel_position = panel_position.unwrap_or_else(|| "bottom".to_string());
     let flat_mode_tb = flat_mode_tb.unwrap_or_else(|| "false".to_string());
 
-    // Position window based on panel_position setting
-    if let Ok(Some(monitor)) = window.current_monitor() {
-        let monitor_size = monitor.size();
-        let monitor_pos = monitor.position();
+    // Detect monitor containing the cursor (for multi-monitor setups).
+    // Falls back to the monitor where the window was last shown.
+    let monitor_bounds = platform::platform_cursor_monitor().or_else(|| {
+        let monitor = window.current_monitor().ok()??;
+        let size = monitor.size();
+        let pos = monitor.position();
         let scale = monitor.scale_factor();
-
-        let screen_w = monitor_size.width as f64 / scale;
-        let screen_h = monitor_size.height as f64 / scale;
-        let mon_x = monitor_pos.x as f64 / scale;
-        let mon_y = monitor_pos.y as f64 / scale;
+        Some((
+            pos.x as f64 / scale,
+            pos.y as f64 / scale,
+            size.width as f64 / scale,
+            size.height as f64 / scale,
+        ))
+    });
+    if let Some((mon_x, mon_y, screen_w, screen_h)) = monitor_bounds {
         let margin = 6.0_f64;
 
         let (win_w, win_h, x, y, min_w, min_h, max_w, max_h) = match panel_position.as_str() {
