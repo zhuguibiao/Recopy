@@ -105,6 +105,8 @@ export function ClipboardList() {
 
   // GroupRow refs for T/B mode horizontal virtualization (keyed by group index)
   const groupRowRefs = useRef<Map<number, GroupRowHandle>>(new Map());
+  // Group container DOM refs for vertical scroll-into-view (keyed by group index)
+  const groupDivRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Sentinel ref for infinite scroll trigger
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -186,6 +188,9 @@ export function ClipboardList() {
       const group = groups[gi];
       const localIdx = group.items.findIndex((entry) => entry.flatIndex === selectedIndex);
       if (localIdx !== -1) {
+        // Scroll the group container into the vertical viewport
+        groupDivRefs.current.get(gi)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        // Scroll the card into view within the horizontal row
         groupRowRefs.current.get(gi)?.scrollToIndex(localIdx);
         break;
       }
@@ -264,7 +269,17 @@ export function ClipboardList() {
       {/* Spacer at scroll-end for reversed mode (visually at top due to flex-col-reverse) */}
       {isReversed && <div className="shrink-0 h-4" />}
       {groups.map((group, groupIndex) => (
-        <div key={group.label} className="mb-1">
+        <div
+          key={group.label}
+          className="mb-1"
+          ref={(el) => {
+            if (el) {
+              groupDivRefs.current.set(groupIndex, el);
+            } else {
+              groupDivRefs.current.delete(groupIndex);
+            }
+          }}
+        >
           <div
             className="px-5 py-1 text-muted-foreground text-xs font-medium cursor-pointer select-none"
             onClick={() => {
