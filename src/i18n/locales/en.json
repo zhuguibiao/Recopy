@@ -95,7 +95,9 @@
       "confirmClear": "Confirm Clear",
       "cleared": "Cleared {{count}} items",
       "clearAll": "Clear All",
-      "retentionHint": "Cleanup runs on next app launch"
+      "retentionHint": "Cleanup runs on next app launch",
+      "storageUsed": "Storage Used",
+      "storageUsedDesc": "Total space used by database and images"
     },
     "privacy": {
       "title": "Privacy",
@@ -114,6 +116,7 @@
       "repository": "Repository",
       "feedback": "Feedback",
       "reportIssue": "Report Issue",
+      "changelog": "Changelog",
       "author": "Author",
       "license": "License",
       "brewAvailable": "Supported"

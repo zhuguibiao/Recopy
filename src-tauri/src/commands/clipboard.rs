@@ -1196,3 +1196,40 @@ pub async fn open_url(url: String) -> Result<(), String> {
 
     Ok(())
 }
+
+/// Get the total storage size used by the app (database + images), in bytes.
+#[tauri::command]
+pub async fn get_storage_size(app: AppHandle) -> Result<u64, String> {
+    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let mut total: u64 = 0;
+
+    // Database file + WAL/SHM
+    for name in ["recopy.db", "recopy.db-wal", "recopy.db-shm"] {
+        if let Ok(meta) = std::fs::metadata(app_data.join(name)) {
+            total += meta.len();
+        }
+    }
+
+    // Images directory (recursive)
+    let images_dir = app_data.join("images");
+    if images_dir.exists() {
+        fn dir_size(path: &std::path::Path) -> u64 {
+            let mut size = 0;
+            if let Ok(entries) = std::fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    if let Ok(ft) = entry.file_type() {
+                        if ft.is_file() {
+                            size += entry.metadata().map(|m| m.len()).unwrap_or(0);
+                        } else if ft.is_dir() {
+                            size += dir_size(&entry.path());
+                        }
+                    }
+                }
+            }
+            size
+        }
+        total += dir_size(&images_dir);
+    }
+
+    Ok(total)
+}

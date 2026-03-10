@@ -78,6 +78,32 @@ mod win32 {
     pub const INPUT_KEYBOARD: u32 = 1;
     pub const KEYEVENTF_KEYUP: u32 = 0x0002;
 
+    // Monitor detection types
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    pub struct POINT {
+        pub x: i32,
+        pub y: i32,
+    }
+
+    #[repr(C)]
+    pub struct RECT {
+        pub left: i32,
+        pub top: i32,
+        pub right: i32,
+        pub bottom: i32,
+    }
+
+    pub const MONITOR_DEFAULTTONEAREST: u32 = 2;
+
+    #[repr(C)]
+    pub struct MONITORINFO {
+        pub cb_size: u32,
+        pub rc_monitor: RECT,
+        pub rc_work: RECT,
+        pub dw_flags: u32,
+    }
+
     /// KBDLLHOOKSTRUCT – passed via LPARAM in WH_KEYBOARD_LL callback.
     #[repr(C)]
     pub struct KBDLLHOOKSTRUCT {
@@ -188,6 +214,12 @@ mod win32 {
             wparam: WPARAM,
             lparam: LPARAM,
         ) -> LRESULT;
+        pub fn GetCursorPos(point: *mut POINT) -> i32;
+        pub fn MonitorFromPoint(pt: POINT, flags: u32) -> isize;
+        pub fn GetMonitorInfoW(hmonitor: isize, lpmi: *mut MONITORINFO) -> i32;
+        pub fn LoadLibraryW(name: *const u16) -> isize;
+        pub fn GetProcAddress(hmodule: isize, name: *const u8) -> usize;
+        pub fn FreeLibrary(hmodule: isize) -> i32;
     }
 }
 
@@ -690,6 +722,100 @@ fn point_in_window(x: i32, y: i32, hwnd: isize) -> bool {
             x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom
         } else {
             false
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Cursor-based monitor detection (multi-monitor support)
+// ---------------------------------------------------------------------------
+
+/// Detect which monitor contains the mouse cursor and return its bounds.
+/// Returns (x, y, width, height) in logical coordinates.
+/// Note: on mixed-DPI multi-monitor setups, positioning may be slightly
+/// inaccurate because Tauri converts logical→physical using the window's
+/// current monitor DPI, not the target monitor's.
+pub fn platform_cursor_monitor() -> Option<(f64, f64, f64, f64)> {
+    unsafe {
+        let mut pt = win32::POINT { x: 0, y: 0 };
+        if win32::GetCursorPos(&mut pt) == 0 {
+            return None;
+        }
+
+        let hmonitor = win32::MonitorFromPoint(pt, win32::MONITOR_DEFAULTTONEAREST);
+        if hmonitor == 0 {
+            return None;
+        }
+
+        let mut info: win32::MONITORINFO = std::mem::zeroed();
+        info.cb_size = std::mem::size_of::<win32::MONITORINFO>() as u32;
+        if win32::GetMonitorInfoW(hmonitor, &mut info) == 0 {
+            return None;
+        }
+
+        let rc = &info.rc_monitor;
+        let phys_x = rc.left as f64;
+        let phys_y = rc.top as f64;
+        let phys_w = (rc.right - rc.left) as f64;
+        let phys_h = (rc.bottom - rc.top) as f64;
+
+        let scale = get_monitor_dpi_scale(hmonitor);
+        Some((
+            phys_x / scale,
+            phys_y / scale,
+            phys_w / scale,
+            phys_h / scale,
+        ))
+    }
+}
+
+pub fn platform_menu_bar_height() -> f64 {
+    0.0 // Windows has no macOS-style menu bar
+}
+
+/// Get the DPI scale factor for a monitor (1.0 = 96 DPI = 100%).
+/// Dynamically loads GetDpiForMonitor from Shcore.dll for compatibility.
+fn get_monitor_dpi_scale(hmonitor: isize) -> f64 {
+    type GetDpiForMonitorFn = unsafe extern "system" fn(isize, u32, *mut u32, *mut u32) -> i32;
+
+    unsafe {
+        // "Shcore.dll" as null-terminated wide string
+        let lib_name: [u16; 11] = [
+            b'S' as u16,
+            b'h' as u16,
+            b'c' as u16,
+            b'o' as u16,
+            b'r' as u16,
+            b'e' as u16,
+            b'.' as u16,
+            b'd' as u16,
+            b'l' as u16,
+            b'l' as u16,
+            0,
+        ];
+        let hmodule = win32::LoadLibraryW(lib_name.as_ptr());
+        if hmodule == 0 {
+            return 1.0;
+        }
+
+        let proc_name = b"GetDpiForMonitor\0";
+        let proc = win32::GetProcAddress(hmodule, proc_name.as_ptr());
+        if proc == 0 {
+            win32::FreeLibrary(hmodule);
+            return 1.0;
+        }
+
+        let get_dpi: GetDpiForMonitorFn = std::mem::transmute(proc);
+        let mut dpi_x: u32 = 96;
+        let mut dpi_y: u32 = 96;
+        // MDT_EFFECTIVE_DPI = 0
+        let hr = get_dpi(hmonitor, 0, &mut dpi_x, &mut dpi_y);
+        win32::FreeLibrary(hmodule);
+
+        if hr == 0 {
+            dpi_x as f64 / 96.0
+        } else {
+            1.0
         }
     }
 }

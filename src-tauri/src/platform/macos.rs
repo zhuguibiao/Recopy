@@ -287,6 +287,130 @@ pub fn is_recopy_foreground() -> bool {
     false
 }
 
+/// Detect which monitor contains the mouse cursor and return its bounds.
+/// Returns (x, y, width, height) in logical coordinates (CG points, top-left origin).
+/// Used by show_main_window() to position the panel on the correct monitor.
+pub fn platform_cursor_monitor() -> Option<(f64, f64, f64, f64)> {
+    use std::ffi::c_void;
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    struct CGPoint {
+        x: f64,
+        y: f64,
+    }
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    struct CGSize {
+        width: f64,
+        height: f64,
+    }
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    struct CGRect {
+        origin: CGPoint,
+        size: CGSize,
+    }
+
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        fn CGEventCreate(source: *const c_void) -> *mut c_void;
+        fn CGEventGetLocation(event: *const c_void) -> CGPoint;
+        fn CGGetActiveDisplayList(max: u32, list: *mut u32, count: *mut u32) -> i32;
+        fn CGDisplayBounds(display: u32) -> CGRect;
+    }
+
+    extern "C" {
+        fn CFRelease(cf: *const c_void);
+    }
+
+    unsafe {
+        // Get cursor position in CG global coordinates (points, top-left origin)
+        let event = CGEventCreate(std::ptr::null());
+        if event.is_null() {
+            return None;
+        }
+        let cursor = CGEventGetLocation(event);
+        CFRelease(event);
+
+        // Enumerate active displays
+        let mut count: u32 = 0;
+        if CGGetActiveDisplayList(0, std::ptr::null_mut(), &mut count) != 0 || count == 0 {
+            return None;
+        }
+        let mut displays = vec![0u32; count as usize];
+        if CGGetActiveDisplayList(count, displays.as_mut_ptr(), &mut count) != 0 {
+            return None;
+        }
+
+        // Find which display contains the cursor
+        for &display in &displays {
+            let bounds = CGDisplayBounds(display);
+            if cursor.x >= bounds.origin.x
+                && cursor.x < bounds.origin.x + bounds.size.width
+                && cursor.y >= bounds.origin.y
+                && cursor.y < bounds.origin.y + bounds.size.height
+            {
+                return Some((
+                    bounds.origin.x,
+                    bounds.origin.y,
+                    bounds.size.width,
+                    bounds.size.height,
+                ));
+            }
+        }
+
+        // Cursor not in any display (e.g. display hotplug) — let caller fall back
+        None
+    }
+}
+
+/// Get the system menu bar height (accounts for notched Mac displays).
+/// Uses `[[NSApp mainMenu] menuBarHeight]` via raw objc_msgSend.
+pub fn platform_menu_bar_height() -> f64 {
+    use std::ffi::{c_char, c_void};
+
+    extern "C" {
+        fn objc_getClass(name: *const c_char) -> *mut c_void;
+        fn sel_registerName(name: *const c_char) -> *mut c_void;
+        fn objc_msgSend();
+    }
+
+    unsafe {
+        let msg_ptr: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let msg_f64: unsafe extern "C" fn(*mut c_void, *mut c_void) -> f64 =
+            std::mem::transmute(objc_msgSend as *const ());
+
+        // [NSApplication sharedApplication]
+        let cls = objc_getClass(b"NSApplication\0".as_ptr() as _);
+        let sel = sel_registerName(b"sharedApplication\0".as_ptr() as _);
+        let app = msg_ptr(cls, sel);
+        if app.is_null() {
+            return 25.0;
+        }
+
+        // [app mainMenu]
+        let sel = sel_registerName(b"mainMenu\0".as_ptr() as _);
+        let menu = msg_ptr(app, sel);
+        if menu.is_null() {
+            return 25.0;
+        }
+
+        // [menu menuBarHeight]
+        let sel = sel_registerName(b"menuBarHeight\0".as_ptr() as _);
+        let height = msg_f64(menu, sel);
+
+        if height > 0.0 {
+            height
+        } else {
+            25.0
+        }
+    }
+}
+
 /// Resign key window status without hiding.
 /// This returns keyboard focus to the previously active app
 /// so that simulate_paste() sends Cmd+V to the correct target.

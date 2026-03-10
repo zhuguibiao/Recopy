@@ -95,7 +95,9 @@
       "confirmClear": "确认清空",
       "cleared": "已清空 {{count}} 条",
       "clearAll": "清空全部",
-      "retentionHint": "清理将在下次启动时执行"
+      "retentionHint": "清理将在下次启动时执行",
+      "storageUsed": "存储占用",
+      "storageUsedDesc": "数据库和图片的总占用空间"
     },
     "privacy": {
       "title": "隐私",
@@ -114,6 +116,7 @@
       "repository": "源码仓库",
       "feedback": "反馈",
       "reportIssue": "报告问题",
+      "changelog": "更新日志",
       "author": "作者",
       "license": "许可证",
       "brewAvailable": "支持安装"

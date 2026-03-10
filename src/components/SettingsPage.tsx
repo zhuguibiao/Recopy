@@ -204,6 +204,13 @@ function GeneralSettings({
   );
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 function HistorySettings({
   settings,
   updateSetting,
@@ -216,6 +223,13 @@ function HistorySettings({
   const { t } = useTranslation();
   const [confirmClear, setConfirmClear] = useState(false);
   const [cleared, setCleared] = useState<number | null>(null);
+  const [storageSize, setStorageSize] = useState<number | null>(null);
+
+  useEffect(() => {
+    invoke<number>("get_storage_size")
+      .then(setStorageSize)
+      .catch(() => {});
+  }, [cleared]);
 
   const handleClear = async () => {
     if (!confirmClear) {
@@ -304,6 +318,15 @@ function HistorySettings({
           />
           <span className="text-xs text-muted-foreground">MB</span>
         </div>
+      </SettingRow>
+
+      <SettingRow
+        label={t("settings.history.storageUsed")}
+        description={t("settings.history.storageUsedDesc")}
+      >
+        <span className="text-sm text-foreground tabular-nums">
+          {storageSize !== null ? formatBytes(storageSize) : "..."}
+        </span>
       </SettingRow>
 
       <SettingRow label={t("settings.history.clear")} description={t("settings.history.clearDesc")}>
@@ -531,6 +554,11 @@ function AboutSettings() {
             label: t("settings.about.feedback"),
             value: t("settings.about.reportIssue"),
             link: "https://github.com/shiqkuangsan/Recopy/issues",
+          },
+          {
+            label: t("settings.about.changelog"),
+            value: "Releases",
+            link: "https://github.com/shiqkuangsan/Recopy/releases",
           },
           {
             label: t("settings.about.author"),
