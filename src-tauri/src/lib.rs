@@ -249,8 +249,8 @@ pub fn show_main_window(app: &tauri::AppHandle) {
                 (w, h, mon_x + margin, mon_y, w, 300.0, w, 800.0)
             }
             "left" => {
-                // 28px top offset clears macOS menu bar (25px) + small gap
-                let top_inset = 28.0_f64;
+                // 38px top offset clears macOS menu bar (up to 37px on notched Macs)
+                let top_inset = 38.0_f64;
                 let w = 380.0;
                 let h = screen_h - top_inset - margin;
                 (w, h, mon_x + margin, mon_y + top_inset, w, h, w, h)
