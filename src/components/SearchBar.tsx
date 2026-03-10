@@ -61,7 +61,7 @@ export function SearchBar() {
         placeholder={t("search.placeholder")}
         className="bg-input/60 border-border/50 rounded-lg py-1.5 pl-8 pr-7 h-auto text-sm"
       />
-      {searchQuery && (
+      {searchQuery.trim() && (
         <Button
           variant="ghost"
           size="icon-xs"
