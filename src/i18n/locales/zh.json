@@ -95,7 +95,9 @@
       "confirmClear": "确认清空",
       "cleared": "已清空 {{count}} 条",
       "clearAll": "清空全部",
-      "retentionHint": "清理将在下次启动时执行"
+      "retentionHint": "清理将在下次启动时执行",
+      "storageUsed": "存储占用",
+      "storageUsedDesc": "数据库和图片的总占用空间"
     },
     "privacy": {
       "title": "隐私",
