@@ -228,7 +228,7 @@ export function ClipboardList() {
   }, [selectedIndex, shouldGroup, groups]);
 
   // Auto-scroll selected card into view for T/B flat mode
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isVertical || shouldGroup || selectedIndex < 0) return;
     flatRowRef.current?.scrollToIndex(selectedIndex);
   }, [selectedIndex, isVertical, shouldGroup]);
