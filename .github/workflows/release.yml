@@ -123,6 +123,79 @@ jobs:
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
           retention-days: 7
 
+  sync-gitee:
+    name: Sync Release to Gitee
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download GitHub Release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p /tmp/release
+          gh release download "$TAG" -R shiqkuangsan/Recopy -D /tmp/release
+          echo "Downloaded assets:"
+          ls -lh /tmp/release/
+
+      - name: Generate Gitee latest.json
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          cd /tmp/release
+          # Replace GitHub download URLs with Gitee equivalents (same path structure)
+          sed -i 's|https://github.com/shiqkuangsan/Recopy/releases/download/|https://gitee.com/shiqkuangsan/Recopy/releases/download/|g' latest.json
+          echo "Gitee latest.json:"
+          cat latest.json
+
+      - name: Create Gitee Release
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          # Create Release via Gitee API
+          RELEASE_ID=$(curl -sf -X POST "https://gitee.com/api/v5/repos/shiqkuangsan/Recopy/releases" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg token "$GITEE_TOKEN" \
+              --arg tag "$TAG" \
+              --arg name "Recopy $TAG" \
+              --arg body "Release $TAG — see [GitHub Release](https://github.com/shiqkuangsan/Recopy/releases/tag/$TAG) for full notes." \
+              '{access_token: $token, tag_name: $tag, name: $name, body: $body, target_commitish: "main"}'
+            )" | jq -r '.id')
+
+          echo "Created Gitee Release ID: $RELEASE_ID"
+
+          # Upload all assets except latest.json (it goes to the updater branch)
+          for file in /tmp/release/*; do
+            [ -f "$file" ] || continue
+            fname=$(basename "$file")
+            [ "$fname" = "latest.json" ] && continue
+            echo "Uploading $fname..."
+            curl -sf -X POST \
+              "https://gitee.com/api/v5/repos/shiqkuangsan/Recopy/releases/${RELEASE_ID}/attach_files" \
+              -F "access_token=${GITEE_TOKEN}" \
+              -F "file=@${file}" > /dev/null
+            echo "  ✓ $fname"
+          done
+
+      - name: Push latest.json to updater branch
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          cd /tmp
+          git init gitee-updater
+          cd gitee-updater
+          cp /tmp/release/latest.json .
+          git add latest.json
+          git -c user.name="github-actions" -c user.email="actions@github.com" \
+            commit -m "update latest.json for ${GITHUB_REF_NAME}"
+          git branch -M updater
+          git remote add origin "https://shiqkuangsan:${GITEE_TOKEN}@gitee.com/shiqkuangsan/Recopy.git"
+          git push -f origin updater
+          echo "✓ Pushed latest.json to gitee.com/shiqkuangsan/Recopy/raw/updater/latest.json"
+
   update-cask:
     name: Update Homebrew Cask
     needs: build

@@ -35,7 +35,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
     set({ status: "checking" });
     try {
       const { check } = await import("@tauri-apps/plugin-updater");
-      const update = await check();
+      const update = await check({ timeout: 5000 });
       if (update) {
         // Close previous handle to avoid Tauri backend Resource leak
         get()._updateRef?.close();
