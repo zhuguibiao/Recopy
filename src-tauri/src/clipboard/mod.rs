@@ -148,4 +148,53 @@ mod tests {
         // Cleanup
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
+
+    #[test]
+    fn test_generate_thumbnail_invalid_data() {
+        let invalid_bytes = b"this is not an image";
+        let result = generate_thumbnail(invalid_bytes);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_generate_thumbnail_empty_data() {
+        let empty_bytes: &[u8] = b"";
+        let result = generate_thumbnail(empty_bytes);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_compute_hash_empty() {
+        let hash1 = compute_hash(b"");
+        let hash2 = compute_hash(b"");
+        assert_eq!(hash1, hash2);
+        assert_eq!(hash1.len(), 64);
+        assert_eq!(
+            hash1,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn test_compute_hash_large_input() {
+        let large_data = vec![0xABu8; 10 * 1024 * 1024];
+        let hash1 = compute_hash(&large_data);
+        let hash2 = compute_hash(&large_data);
+        assert_eq!(hash1, hash2);
+        assert_eq!(hash1.len(), 64);
+    }
+
+    #[test]
+    fn test_exceeds_size_limit_boundary() {
+        let limit_mb = 10;
+        let exact_boundary = limit_mb * 1024 * 1024;
+        assert!(!exceeds_size_limit(exact_boundary, limit_mb));
+        assert!(exceeds_size_limit(exact_boundary + 1, limit_mb));
+        assert!(!exceeds_size_limit(exact_boundary - 1, limit_mb));
+
+        let limit_mb_1 = 1;
+        let boundary_1 = limit_mb_1 * 1024 * 1024;
+        assert!(!exceeds_size_limit(boundary_1, limit_mb_1));
+        assert!(exceeds_size_limit(boundary_1 + 1, limit_mb_1));
+    }
 }

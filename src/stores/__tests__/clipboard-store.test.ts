@@ -363,4 +363,188 @@ describe("useClipboardStore", () => {
       expect(useClipboardStore.getState().isFetchingMore).toBe(false);
     });
   });
+
+  describe("setFilterType", () => {
+    it("should call fetchItems when viewMode is history and no search query", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "" });
+
+      useClipboardStore.getState().setFilterType("image");
+
+      expect(useClipboardStore.getState().filterType).toBe("image");
+      expect(mockedInvoke).toHaveBeenCalledWith("get_clipboard_items", {
+        contentType: "image",
+        limit: 500,
+        offset: 0,
+      });
+    });
+
+    it("should call searchItems when viewMode is history and search query exists", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "hello" });
+
+      useClipboardStore.getState().setFilterType("plain_text");
+
+      expect(mockedInvoke).toHaveBeenCalledWith("search_clipboard_items", {
+        query: "hello",
+        contentType: "plain_text",
+        limit: 500,
+        favoritesOnly: false,
+      });
+    });
+
+    it("should call fetchFavorites when viewMode is pins", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "pins", searchQuery: "" });
+
+      useClipboardStore.getState().setFilterType("image");
+
+      expect(mockedInvoke).toHaveBeenCalledWith("get_favorited_items", {
+        contentType: "image",
+        limit: 500,
+        offset: 0,
+      });
+    });
+
+    it("should clear items and reset selectedIndex", () => {
+      useClipboardStore.setState({
+        items: [mockItem()],
+        selectedIndex: 3,
+      });
+      mockedInvoke.mockResolvedValueOnce([]);
+
+      useClipboardStore.getState().setFilterType("file");
+
+      expect(useClipboardStore.getState().items).toEqual([]);
+      expect(useClipboardStore.getState().selectedIndex).toBe(0);
+    });
+  });
+
+  describe("setViewMode", () => {
+    it("should call fetchItems when switching to history without search query", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "pins", searchQuery: "" });
+
+      useClipboardStore.getState().setViewMode("history");
+
+      expect(useClipboardStore.getState().viewMode).toBe("history");
+      expect(mockedInvoke).toHaveBeenCalledWith("get_clipboard_items", {
+        contentType: undefined,
+        limit: 500,
+        offset: 0,
+      });
+    });
+
+    it("should call searchItems with current query when switching to history with search query", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "pins", searchQuery: "test" });
+
+      useClipboardStore.getState().setViewMode("history");
+
+      expect(mockedInvoke).toHaveBeenCalledWith("search_clipboard_items", {
+        query: "test",
+        contentType: undefined,
+        limit: 500,
+        favoritesOnly: false,
+      });
+    });
+
+    it("should call fetchFavorites when switching to pins without search query", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "" });
+
+      useClipboardStore.getState().setViewMode("pins");
+
+      expect(useClipboardStore.getState().viewMode).toBe("pins");
+      expect(mockedInvoke).toHaveBeenCalledWith("get_favorited_items", {
+        contentType: undefined,
+        limit: 500,
+        offset: 0,
+      });
+    });
+
+    it("should call searchItems with favoritesOnly when switching to pins with search query", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "query" });
+
+      useClipboardStore.getState().setViewMode("pins");
+
+      expect(mockedInvoke).toHaveBeenCalledWith("search_clipboard_items", {
+        query: "query",
+        contentType: undefined,
+        limit: 500,
+        favoritesOnly: true,
+      });
+    });
+
+    it("should reset selectedIndex", () => {
+      useClipboardStore.setState({ selectedIndex: 5 });
+      mockedInvoke.mockResolvedValueOnce([]);
+
+      useClipboardStore.getState().setViewMode("pins");
+
+      expect(useClipboardStore.getState().selectedIndex).toBe(0);
+    });
+  });
+
+  describe("refreshOnChange", () => {
+    it("should call fetchFavorites when viewMode is pins", async () => {
+      const favItems = [mockItem({ id: "fav-1", is_favorited: true })];
+      mockedInvoke.mockResolvedValueOnce(favItems);
+      useClipboardStore.setState({ viewMode: "pins", searchQuery: "" });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(mockedInvoke).toHaveBeenCalledWith("get_favorited_items", {
+        contentType: undefined,
+        limit: 500,
+        offset: 0,
+      });
+      expect(useClipboardStore.getState().items).toEqual(favItems);
+    });
+
+    it("should call fetchItems when viewMode is history and no search query", async () => {
+      const items = [mockItem()];
+      mockedInvoke.mockResolvedValueOnce(items);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "" });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(mockedInvoke).toHaveBeenCalledWith("get_clipboard_items", {
+        contentType: undefined,
+        limit: 500,
+        offset: 0,
+      });
+      expect(useClipboardStore.getState().items).toEqual(items);
+    });
+
+    it("should call searchItems when viewMode is history and search query exists", async () => {
+      const items = [mockItem()];
+      mockedInvoke.mockResolvedValueOnce(items);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "find me" });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(mockedInvoke).toHaveBeenCalledWith("search_clipboard_items", {
+        query: "find me",
+        contentType: undefined,
+        limit: 500,
+        favoritesOnly: false,
+      });
+      expect(useClipboardStore.getState().items).toEqual(items);
+    });
+
+    it("should ignore whitespace-only search query and call fetchItems", async () => {
+      mockedInvoke.mockResolvedValueOnce([]);
+      useClipboardStore.setState({ viewMode: "history", searchQuery: "   " });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(mockedInvoke).toHaveBeenCalledWith("get_clipboard_items", {
+        contentType: undefined,
+        limit: 500,
+        offset: 0,
+      });
+    });
+  });
 });
