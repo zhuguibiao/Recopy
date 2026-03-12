@@ -164,6 +164,85 @@ Update the draft release:
 gh release edit vX.Y.Z --notes "<release notes>"
 ```
 
+## Step 8.5: Sync to Gitee
+
+After release notes are written, sync the release to Gitee for China mainland users.
+
+**This step requires the `GITEE_TOKEN` environment variable.** If not set, skip and remind the user.
+
+### Procedure
+
+1. Download all release assets from GitHub:
+
+```bash
+TAG="vX.Y.Z"
+mkdir -p /tmp/gitee-sync
+gh release download "$TAG" -R shiqkuangsan/Recopy -D /tmp/gitee-sync
+```
+
+2. Generate Gitee version of `latest.json` (replace GitHub URLs with Gitee):
+
+```bash
+cd /tmp/gitee-sync
+sed -i '' 's|https://github.com/shiqkuangsan/Recopy/releases/download/|https://gitee.com/shiqkuangsan/Recopy/releases/download/|g' latest.json
+```
+
+3. Create Gitee Release and upload assets:
+
+```bash
+# Get release notes from GitHub
+BODY=$(gh release view "$TAG" -R shiqkuangsan/Recopy --json body -q '.body')
+
+# Create Release
+RELEASE_ID=$(curl -sf -X POST "https://gitee.com/api/v5/repos/shiqkuangsan/Recopy/releases" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n \
+    --arg token "$GITEE_TOKEN" \
+    --arg tag "$TAG" \
+    --arg name "Recopy $TAG" \
+    --arg body "$BODY" \
+    '{access_token: $token, tag_name: $tag, name: $name, body: $body, target_commitish: "main"}'
+  )" | jq -r '.id')
+
+# Upload all assets except latest.json
+for file in /tmp/gitee-sync/*; do
+  [ -f "$file" ] || continue
+  fname=$(basename "$file")
+  [ "$fname" = "latest.json" ] && continue
+  curl -sf -X POST \
+    "https://gitee.com/api/v5/repos/shiqkuangsan/Recopy/releases/${RELEASE_ID}/attach_files" \
+    -F "access_token=${GITEE_TOKEN}" \
+    -F "file=@${file}" > /dev/null
+  echo "  ✓ $fname"
+done
+```
+
+4. Push `latest.json` to Gitee `updater` branch:
+
+```bash
+cd /tmp
+rm -rf gitee-updater
+git init gitee-updater
+cd gitee-updater
+cp /tmp/gitee-sync/latest.json .
+git add latest.json
+git -c user.name="release" -c user.email="release@recopy.app" \
+  commit -m "update latest.json for $TAG"
+git branch -M updater
+git remote add origin "https://shiqkuangsan:${GITEE_TOKEN}@gitee.com/shiqkuangsan/Recopy.git"
+git push -f origin updater
+```
+
+5. Clean up:
+
+```bash
+rm -rf /tmp/gitee-sync /tmp/gitee-updater
+```
+
+6. Verify: fetch `https://gitee.com/shiqkuangsan/Recopy/raw/updater/latest.json` and confirm version matches.
+
+Report upload progress for each file. If any upload fails, report which file failed but continue with the rest.
+
 ## Step 9: Announcement Copy
 
 Generate 3 tiers of announcement copy in both languages (6 total):
@@ -192,6 +271,7 @@ Present a summary table:
 | Tag pushed        | ✅                              |
 | CI build          | ✅ all jobs                     |
 | Release notes     | ✅ filled                       |
+| Gitee sync        | ✅ / skipped                    |
 | Announcement copy | ✅ saved to todos/temp/release/ |
 
 Remind user: go to GitHub Releases page and click **Publish release** when ready.
