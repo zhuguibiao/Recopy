@@ -379,29 +379,31 @@ function PrivacySettings() {
     <div className="space-y-1">
       <SectionTitle>{t("settings.privacy.title")}</SectionTitle>
 
-      <Card className="border-border/50 bg-card/60 py-0">
-        <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <Shield size={15} className="text-primary" />
-            {t("settings.privacy.accessibility")}
-          </h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {t("settings.privacy.accessibilityDesc")}
-          </p>
-          <button
-            onClick={() =>
-              invoke("open_url", {
-                url: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
-              })
-            }
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-          >
-            <ChevronRight size={12} />
-            {t("settings.privacy.accessibilityPath")}
-            <ExternalLink size={11} />
-          </button>
-        </CardContent>
-      </Card>
+      {navigator.platform.includes("Mac") && (
+        <Card className="border-border/50 bg-card/60 py-0">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <Shield size={15} className="text-primary" />
+              {t("settings.privacy.accessibility")}
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t("settings.privacy.accessibilityDesc")}
+            </p>
+            <button
+              onClick={() =>
+                invoke("open_url", {
+                  url: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+                })
+              }
+              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+            >
+              <ChevronRight size={12} />
+              {t("settings.privacy.accessibilityPath")}
+              <ExternalLink size={11} />
+            </button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-border/50 bg-card/60 py-0">
         <CardContent className="p-4 space-y-2">
