@@ -938,6 +938,79 @@ kbd {
 }
 
 /* ============================================================
+   Sponsor
+   ============================================================ */
+.sponsor {
+  padding: 80px 0;
+  background: var(--bg);
+}
+
+.sponsor-cards {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.sponsor-card {
+  width: 260px;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.12s, box-shadow 0.12s;
+  background: var(--surface);
+}
+
+.sponsor-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.sponsor-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.sponsor-card-alipay .sponsor-card-header {
+  background: #1677ff;
+  color: #fff;
+}
+
+.sponsor-card-wechat .sponsor-card-header {
+  background: #07c160;
+  color: #fff;
+}
+
+.sponsor-qr {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.sponsor-qr img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.sponsor-thanks {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
    Footer
    ============================================================ */
 .footer {
@@ -1064,5 +1137,18 @@ kbd {
 
   .demo-window {
     box-shadow: 6px 6px 0 var(--border);
+  }
+
+  .sponsor-cards {
+    gap: 20px;
+  }
+
+  .sponsor-card {
+    width: 220px;
+  }
+
+  .sponsor-qr img {
+    width: 160px;
+    height: 160px;
   }
 }
