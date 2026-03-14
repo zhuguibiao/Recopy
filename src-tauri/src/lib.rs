@@ -77,6 +77,7 @@ pub fn run() {
             clip_cmd::hide_window,
             clip_cmd::show_copy_hud,
             clip_cmd::get_storage_size,
+            clip_cmd::set_tray_visible,
         ])
         .setup(|app| {
             // Hide dock icon (tao overrides LSUIElement at startup, so must set programmatically)
@@ -462,13 +463,22 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     };
     let icon = tauri::image::Image::from_bytes(icon_bytes)?;
 
-    let _tray = TrayIconBuilder::new()
+    // Read show_tray_icon setting from DB
+    let show_tray = {
+        let pool = app.state::<db::DbPool>();
+        tauri::async_runtime::block_on(db::queries::get_setting(&pool.0, "show_tray_icon"))
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "true".to_string())
+    };
+
+    let tray = TrayIconBuilder::with_id("recopy_tray")
         .icon(icon)
         .icon_as_template(true)
         .tooltip("Recopy")
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id().as_ref() {
+        .on_menu_event(|app: &tauri::AppHandle, event| match event.id().as_ref() {
             "show" => {
                 show_main_window(app);
             }
@@ -480,7 +490,7 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             }
             _ => {}
         })
-        .on_tray_icon_event(|tray, event| {
+        .on_tray_icon_event(|tray: &tauri::tray::TrayIcon, event| {
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
@@ -491,6 +501,11 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             }
         })
         .build(app)?;
+
+    // Apply initial visibility from settings
+    if show_tray != "true" {
+        let _ = tray.set_visible(false);
+    }
 
     Ok(())
 }

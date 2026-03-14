@@ -21,6 +21,7 @@ export interface Settings {
   update_check_interval: string;
   panel_position: string;
   flat_mode_tb: string;
+  show_tray_icon: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: Settings = {
   update_check_interval: "weekly",
   panel_position: "bottom",
   flat_mode_tb: "false",
+  show_tray_icon: "true",
 };
 
 export interface ShowEventPayload {
@@ -97,6 +99,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         update_check_interval: raw.update_check_interval ?? DEFAULT_SETTINGS.update_check_interval,
         panel_position: raw.panel_position ?? DEFAULT_SETTINGS.panel_position,
         flat_mode_tb: raw.flat_mode_tb ?? DEFAULT_SETTINGS.flat_mode_tb,
+        show_tray_icon: raw.show_tray_icon ?? DEFAULT_SETTINGS.show_tray_icon,
       };
       set({ settings, loaded: true });
       applyTheme(settings.theme);
@@ -132,6 +135,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           }
         } catch (err) {
           console.error("Failed to toggle autostart:", err);
+        }
+      }
+      if (key === "show_tray_icon") {
+        try {
+          await invoke("set_tray_visible", { visible: value === "true" });
+        } catch (err) {
+          console.error("Failed to toggle tray icon:", err);
         }
       }
     } catch (e) {

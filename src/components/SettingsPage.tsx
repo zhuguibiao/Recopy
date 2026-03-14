@@ -165,6 +165,24 @@ function GeneralSettings({
         />
       </SettingRow>
 
+      {navigator.platform.includes("Mac") && (
+        <SettingRow
+          label={t("settings.general.showTrayIcon")}
+          description={t("settings.general.showTrayIconDesc")}
+        >
+          <Switch
+            checked={settings.show_tray_icon !== "false"}
+            onCheckedChange={(v) => {
+              if (!v && !settings.shortcut) {
+                alert(t("settings.general.trayIconRequiresShortcut"));
+                return;
+              }
+              updateSetting("show_tray_icon", v ? "true" : "false");
+            }}
+          />
+        </SettingRow>
+      )}
+
       <SettingRow
         label={t("settings.general.panelPosition")}
         description={t("settings.general.panelPositionDesc")}

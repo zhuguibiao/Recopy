@@ -1266,3 +1266,12 @@ pub async fn get_storage_size(app: AppHandle) -> Result<u64, String> {
 
     Ok(total)
 }
+
+/// Set tray icon visibility at runtime (macOS only).
+#[tauri::command]
+pub fn set_tray_visible(app: AppHandle, visible: bool) -> Result<(), String> {
+    let tray = app
+        .tray_by_id("recopy_tray")
+        .ok_or_else(|| "Tray icon not found".to_string())?;
+    tray.set_visible(visible).map_err(|e| e.to_string())
+}
