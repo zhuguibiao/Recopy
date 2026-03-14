@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { platform } from "@tauri-apps/plugin-os";
 import { useSettingsStore, type Settings as AppSettings } from "../stores/settings-store";
 import { useUpdateStore } from "../stores/update-store";
 import {
@@ -165,7 +166,7 @@ function GeneralSettings({
         />
       </SettingRow>
 
-      {navigator.platform.includes("Mac") && (
+      {platform() === "macos" && (
         <SettingRow
           label={t("settings.general.showTrayIcon")}
           description={t("settings.general.showTrayIconDesc")}
@@ -379,7 +380,7 @@ function PrivacySettings() {
     <div className="space-y-1">
       <SectionTitle>{t("settings.privacy.title")}</SectionTitle>
 
-      {navigator.platform.includes("Mac") && (
+      {platform() === "macos" && (
         <Card className="border-border/50 bg-card/60 py-0">
           <CardContent className="p-4 space-y-3">
             <h3 className="text-sm font-medium flex items-center gap-2">
@@ -731,7 +732,7 @@ function ShortcutRecorder({
 
   const formatShortcut = (s: string) =>
     s
-      .replace("CommandOrControl", navigator.platform.includes("Mac") ? "\u2318" : "Ctrl")
+      .replace("CommandOrControl", platform() === "macos" ? "\u2318" : "Ctrl")
       .replace("Shift", "\u21E7")
       .replace("Alt", "\u2325")
       .replace(/\+/g, " ");

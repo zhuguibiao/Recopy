@@ -41,7 +41,8 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
-        }));
+        }))
+        .plugin(tauri_plugin_os::init());
 
     // Register updater + process plugins (gated behind self-update feature for App Store compat)
     #[cfg(feature = "self-update")]

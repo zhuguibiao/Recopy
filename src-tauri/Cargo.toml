@@ -39,6 +39,7 @@ sys-locale = "0.3.2"
 url = "2"
 tauri-plugin-updater = { version = "2", optional = true }
 tauri-plugin-process = { version = "2", optional = true }
+tauri-plugin-os = "2.3.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"
