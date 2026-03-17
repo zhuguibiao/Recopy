@@ -8,17 +8,14 @@ interface FavoriteStarProps {
 }
 
 export function FavoriteStar({ itemId, isFavorited }: FavoriteStarProps) {
+  const refreshOnChange = useClipboardStore((s) => s.refreshOnChange);
+
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     try {
       await invoke("toggle_favorite", { id: itemId });
-      const { viewMode } = useClipboardStore.getState();
-      if (viewMode === "pins") {
-        useClipboardStore.getState().fetchFavorites();
-      } else {
-        useClipboardStore.getState().fetchItems();
-      }
+      await refreshOnChange();
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
     }
