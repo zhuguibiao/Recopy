@@ -15,7 +15,12 @@ export function FavoriteStar({ itemId, isFavorited }: FavoriteStarProps) {
     e.preventDefault();
     try {
       await invoke("toggle_favorite", { id: itemId });
-      useClipboardStore.getState().fetchItems();
+      const { viewMode } = useClipboardStore.getState();
+      if (viewMode === "pins") {
+        useClipboardStore.getState().fetchFavorites();
+      } else {
+        useClipboardStore.getState().fetchItems();
+      }
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
     }
