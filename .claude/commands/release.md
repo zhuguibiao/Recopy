@@ -245,17 +245,25 @@ Report upload progress for each file. If any upload fails, report which file fai
 
 ## Step 9: Announcement Copy
 
-Generate 3 tiers of announcement copy in both languages (6 total):
+Generate 3 tiers of announcement copy in both languages (6 total), using **X/Twitter-compatible plain text format**:
 
-1. **Formal** — for tech communities and forums
-2. **Casual** — for friend groups and social media
-3. **Short** — one-liner for quick sharing
+1. **Formal** — for tech communities and forums (X thread style)
+2. **Casual** — for social media and friend groups
+3. **Short** — single post, must be under 280 characters
 
-Include:
+### Formatting Rules
+
+- **No Markdown syntax**: no `**bold**`, no `- bullet lists`, no `[link](url)`. X does not render Markdown — raw `**` and `-` will show as literal text.
+- Use emoji prefixes (⌨️ 🧠 ⭐ 🖥️ 📜 🔍 🚀 etc.) as visual separators for feature lines
+- Add hashtags at the end of formal sections: `#opensource #clipboard #macOS #Windows #tauri #rust`
+- Casual section adds `#Recopy #opensource` (or Chinese equivalents)
+- Links as plain URLs (no Markdown link syntax)
+
+### Content to include
 
 - Website link: https://recopy.pages.dev/
 - Download link: https://github.com/shiqkuangsan/Recopy/releases/tag/vX.Y.Z
-- GitHub link: https://github.com/shiqkuangsan/Recopy
+- GitHub link: https://github.com/shiqkuangsan/Recopy (formal section only)
 
 Save the generated copy to `todos/temp/release/announcements.X.Y.Z.md`.
 
