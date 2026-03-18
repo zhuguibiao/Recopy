@@ -1,8 +1,8 @@
 /**
- * Cloudflare Pages Function — GitHub Release Download Proxy
+ * Cloudflare Pages Function — Release Download Proxy
  *
- * Streams GitHub Release assets through Cloudflare's edge network,
- * making downloads accessible for users in regions with poor GitHub connectivity.
+ * Redirects to the latest release assets, using Gitee as primary source
+ * (fast & accessible in mainland China) with GitHub as fallback.
  *
  * Routes:
  *   /download/macos     → latest macOS ARM (Apple Silicon) DMG
@@ -10,8 +10,10 @@
  *   /download/windows   → latest Windows x64 installer
  */
 
-const REPO = 'shiqkuangsan/Recopy';
-const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
+const GITEE_REPO = 'shiqkuangsan/Recopy';
+const GITHUB_REPO = 'shiqkuangsan/Recopy';
+const GITEE_API = `https://gitee.com/api/v5/repos/${GITEE_REPO}/releases/latest`;
+const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
 const PLATFORM_MAP = {
   'macos':     '_aarch64.dmg',
@@ -19,6 +21,27 @@ const PLATFORM_MAP = {
   'macos-x64': '_x64.dmg',
   'windows':   '_x64-setup.exe',
 };
+
+/**
+ * Try to find the download URL from a release source.
+ * Returns the browser_download_url of the matching asset, or null.
+ */
+async function findAssetUrl(apiUrl, suffix, headers) {
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { 'User-Agent': 'Recopy-Download-Proxy/1.0', ...headers },
+      cf: { cacheTtl: 300 },
+    });
+    if (!res.ok) return null;
+
+    const release = await res.json();
+    const assets = release.assets || [];
+    const asset = assets.find((a) => a.name.endsWith(suffix));
+    return asset ? asset.browser_download_url : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function onRequest(context) {
   const platform = context.params.platform;
@@ -34,62 +57,25 @@ export async function onRequest(context) {
     );
   }
 
-  try {
-    // Fetch latest release metadata from GitHub API
-    // cf.cacheTtl caches the response at Cloudflare's edge for 5 minutes
-    const releaseRes = await fetch(GITHUB_API, {
-      headers: {
-        'User-Agent': 'Recopy-Download-Proxy/1.0',
-        'Accept': 'application/vnd.github.v3+json',
-      },
-      cf: { cacheTtl: 300 },
-    });
+  // 1. Try Gitee first (no auth needed, fast in China)
+  const giteeUrl = await findAssetUrl(GITEE_API, suffix, {});
 
-    if (!releaseRes.ok) {
-      return Response.redirect(
-        `https://github.com/${REPO}/releases/latest`,
-        302
-      );
-    }
-
-    const release = await releaseRes.json();
-    const asset = release.assets.find((a) => a.name.endsWith(suffix));
-
-    if (!asset) {
-      return Response.redirect(
-        `https://github.com/${REPO}/releases/latest`,
-        302
-      );
-    }
-
-    // Stream the file through Cloudflare's edge network
-    // cf.cacheTtl caches the binary at edge for 24 hours
-    const fileRes = await fetch(asset.browser_download_url, {
-      headers: { 'User-Agent': 'Recopy-Download-Proxy/1.0' },
-      cf: { cacheTtl: 86400 },
-    });
-
-    if (!fileRes.ok) {
-      return Response.redirect(asset.browser_download_url, 302);
-    }
-
-    const headers = new Headers({
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${asset.name}"`,
-      'Cache-Control': 'public, max-age=86400',
-      'Access-Control-Allow-Origin': '*',
-    });
-
-    const contentLength = fileRes.headers.get('Content-Length');
-    if (contentLength) {
-      headers.set('Content-Length', contentLength);
-    }
-
-    return new Response(fileRes.body, { headers });
-  } catch {
-    return Response.redirect(
-      `https://github.com/${REPO}/releases/latest`,
-      302
-    );
+  if (giteeUrl) {
+    return Response.redirect(giteeUrl, 302);
   }
+
+  // 2. Fallback to GitHub
+  const githubUrl = await findAssetUrl(GITHUB_API, suffix, {
+    'Accept': 'application/vnd.github.v3+json',
+  });
+
+  if (githubUrl) {
+    return Response.redirect(githubUrl, 302);
+  }
+
+  // 3. Last resort: redirect to GitHub releases page
+  return Response.redirect(
+    `https://github.com/${GITHUB_REPO}/releases/latest`,
+    302
+  );
 }
