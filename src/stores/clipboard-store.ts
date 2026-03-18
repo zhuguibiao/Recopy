@@ -31,6 +31,11 @@ interface ClipboardState {
   onPanelShow: () => Promise<void>;
 }
 
+interface SelectionSnapshot {
+  selectedIndex: number;
+  selectedItemId: string | null;
+}
+
 export const useClipboardStore = create<ClipboardState>((set, get) => {
   // Ensure only the latest in-flight query can update UI state.
   let latestRequestToken = 0;
@@ -39,6 +44,118 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
     return latestRequestToken;
   };
   const isLatestRequest = (token: number) => token === latestRequestToken;
+  const takeSelectionSnapshot = (): SelectionSnapshot => {
+    const { items, selectedIndex } = get();
+    return {
+      selectedIndex,
+      selectedItemId: items[selectedIndex]?.id ?? null,
+    };
+  };
+  const clampSelectedIndex = (index: number, items: ClipboardItem[]) => {
+    if (items.length === 0) return 0;
+    return Math.max(0, Math.min(index, items.length - 1));
+  };
+  const resolveSelectedIndex = (
+    items: ClipboardItem[],
+    selectionSnapshot: SelectionSnapshot | null,
+  ) => {
+    if (!selectionSnapshot) return 0;
+
+    if (selectionSnapshot.selectedItemId) {
+      const matchedIndex = items.findIndex((item) => item.id === selectionSnapshot.selectedItemId);
+      if (matchedIndex !== -1) return matchedIndex;
+    }
+
+    return clampSelectedIndex(selectionSnapshot.selectedIndex, items);
+  };
+  const applyLoadedItems = (
+    items: ClipboardItem[],
+    options: {
+      hasMore: boolean;
+      selectionSnapshot?: SelectionSnapshot | null;
+    },
+  ) => {
+    set((state) => ({
+      items,
+      loading: false,
+      hasMore: options.hasMore,
+      isFetchingMore: false,
+      selectedIndex:
+        options.selectionSnapshot != null
+          ? resolveSelectedIndex(items, options.selectionSnapshot)
+          : clampSelectedIndex(state.selectedIndex, items),
+    }));
+  };
+  const loadHistoryPage = async (preserveSelection = false) => {
+    const requestToken = nextRequestToken();
+    const selectionSnapshot = preserveSelection ? takeSelectionSnapshot() : null;
+    set({ loading: true });
+    try {
+      const { filterType } = get();
+      const contentType: string | undefined = filterType === "all" ? undefined : filterType;
+      const items = await invoke<ClipboardItem[]>("get_clipboard_items", {
+        contentType,
+        limit: DEFAULT_PAGE_SIZE,
+        offset: 0,
+      });
+      if (!isLatestRequest(requestToken)) return;
+      applyLoadedItems(items, {
+        hasMore: items.length >= DEFAULT_PAGE_SIZE,
+        selectionSnapshot,
+      });
+    } catch (e) {
+      console.error("Failed to fetch items:", e);
+      if (!isLatestRequest(requestToken)) return;
+      set({ loading: false, isFetchingMore: false });
+    }
+  };
+  const loadSearchResults = async (query: string, preserveSelection = false) => {
+    const requestToken = nextRequestToken();
+    const selectionSnapshot = preserveSelection ? takeSelectionSnapshot() : null;
+    set({ loading: true });
+    try {
+      const { filterType, viewMode } = get();
+      const contentType: string | undefined = filterType === "all" ? undefined : filterType;
+      const items = await invoke<ClipboardItem[]>("search_clipboard_items", {
+        query,
+        contentType,
+        limit: DEFAULT_PAGE_SIZE,
+        favoritesOnly: viewMode === "pins",
+      });
+      if (!isLatestRequest(requestToken)) return;
+      applyLoadedItems(items, {
+        hasMore: false,
+        selectionSnapshot,
+      });
+    } catch (e) {
+      console.error("Failed to search items:", e);
+      if (!isLatestRequest(requestToken)) return;
+      set({ loading: false, isFetchingMore: false });
+    }
+  };
+  const loadFavoritesPage = async (preserveSelection = false) => {
+    const requestToken = nextRequestToken();
+    const selectionSnapshot = preserveSelection ? takeSelectionSnapshot() : null;
+    set({ loading: true });
+    try {
+      const { filterType } = get();
+      const contentType: string | undefined = filterType === "all" ? undefined : filterType;
+      const items = await invoke<ClipboardItem[]>("get_favorited_items", {
+        contentType,
+        limit: DEFAULT_PAGE_SIZE,
+        offset: 0,
+      });
+      if (!isLatestRequest(requestToken)) return;
+      applyLoadedItems(items, {
+        hasMore: false,
+        selectionSnapshot,
+      });
+    } catch (e) {
+      console.error("Failed to fetch favorites:", e);
+      if (!isLatestRequest(requestToken)) return;
+      set({ loading: false, isFetchingMore: false });
+    }
+  };
 
   return {
     items: [],
@@ -84,56 +201,9 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
     setSelectedIndex: (index: number) => set({ selectedIndex: index }),
     setModifierHeld: (held: boolean) => set({ modifierHeld: held }),
 
-    fetchItems: async () => {
-      const requestToken = nextRequestToken();
-      set({ loading: true });
-      try {
-        const { filterType } = get();
-        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
-        const items = await invoke<ClipboardItem[]>("get_clipboard_items", {
-          contentType,
-          limit: DEFAULT_PAGE_SIZE,
-          offset: 0,
-        });
-        if (!isLatestRequest(requestToken)) return;
-        set({
-          items,
-          loading: false,
-          hasMore: items.length >= DEFAULT_PAGE_SIZE,
-          isFetchingMore: false,
-        });
-      } catch (e) {
-        console.error("Failed to fetch items:", e);
-        if (!isLatestRequest(requestToken)) return;
-        set({ loading: false, isFetchingMore: false });
-      }
-    },
+    fetchItems: async () => loadHistoryPage(false),
 
-    searchItems: async (query: string) => {
-      const requestToken = nextRequestToken();
-      set({ loading: true });
-      try {
-        const { filterType, viewMode } = get();
-        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
-        const items = await invoke<ClipboardItem[]>("search_clipboard_items", {
-          query,
-          contentType,
-          limit: DEFAULT_PAGE_SIZE,
-          favoritesOnly: viewMode === "pins",
-        });
-        if (!isLatestRequest(requestToken)) return;
-        set({
-          items,
-          loading: false,
-          hasMore: false,
-          isFetchingMore: false,
-        });
-      } catch (e) {
-        console.error("Failed to search items:", e);
-        if (!isLatestRequest(requestToken)) return;
-        set({ loading: false, isFetchingMore: false });
-      }
-    },
+    searchItems: async (query: string) => loadSearchResults(query, false),
 
     deleteItem: async (id: string) => {
       try {
@@ -151,41 +221,18 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
     refreshOnChange: async () => {
       const { searchQuery, viewMode } = get();
       if (viewMode === "pins") {
-        await get().fetchFavorites();
+        await loadFavoritesPage(true);
       } else {
         const trimmedQuery = searchQuery.trim();
         if (trimmedQuery) {
-          await get().searchItems(trimmedQuery);
+          await loadSearchResults(trimmedQuery, true);
         } else {
-          await get().fetchItems();
+          await loadHistoryPage(true);
         }
       }
     },
 
-    fetchFavorites: async () => {
-      const requestToken = nextRequestToken();
-      set({ loading: true });
-      try {
-        const { filterType } = get();
-        const contentType: string | undefined = filterType === "all" ? undefined : filterType;
-        const items = await invoke<ClipboardItem[]>("get_favorited_items", {
-          contentType,
-          limit: DEFAULT_PAGE_SIZE,
-          offset: 0,
-        });
-        if (!isLatestRequest(requestToken)) return;
-        set({
-          items,
-          loading: false,
-          hasMore: false, // Pins mode never does incremental loading
-          isFetchingMore: false,
-        });
-      } catch (e) {
-        console.error("Failed to fetch favorites:", e);
-        if (!isLatestRequest(requestToken)) return;
-        set({ loading: false, isFetchingMore: false });
-      }
-    },
+    fetchFavorites: async () => loadFavoritesPage(false),
 
     fetchMore: async () => {
       const { viewMode, searchQuery, hasMore, isFetchingMore, items } = get();
@@ -225,13 +272,13 @@ export const useClipboardStore = create<ClipboardState>((set, get) => {
       set((state) => ({ panelShowVersion: state.panelShowVersion + 1 }));
       const { searchQuery, viewMode } = get();
       if (viewMode === "pins") {
-        await get().fetchFavorites();
+        await loadFavoritesPage(true);
       } else {
         const trimmedQuery = searchQuery.trim();
         if (trimmedQuery) {
-          await get().searchItems(trimmedQuery);
+          await loadSearchResults(trimmedQuery, true);
         } else {
-          await get().fetchItems();
+          await loadHistoryPage(true);
         }
       }
     },

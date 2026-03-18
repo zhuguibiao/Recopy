@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, cleanup } from "@testing-library/react";
+import { act, render, cleanup, fireEvent } from "@testing-library/react";
 import { ClipboardList } from "../ClipboardList";
 import { useClipboardStore } from "../../stores/clipboard-store";
 import { useSettingsStore, type Settings } from "../../stores/settings-store";
@@ -94,6 +94,17 @@ describe("ClipboardList", () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+
+    Object.defineProperty(globalThis, "IntersectionObserver", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(
+        class {
+          observe = vi.fn();
+          disconnect = vi.fn();
+        },
+      ),
+    });
 
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -231,5 +242,46 @@ describe("ClipboardList", () => {
     view.rerender(<ClipboardList />);
 
     expect(scrollIntoViewSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("fetches more in tb flat mode when horizontal scroll reaches the end", () => {
+    const fetchMoreSpy = vi.fn();
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS, panel_position: "bottom", flat_mode_tb: "true" },
+      menuBarHeight: 0,
+      loaded: true,
+    });
+    useClipboardStore.setState({
+      items: [
+        mockItem({ id: "item-1", plain_text: "item-1" }),
+        mockItem({ id: "item-2", plain_text: "item-2" }),
+        mockItem({ id: "item-3", plain_text: "item-3" }),
+      ],
+      hasMore: true,
+      fetchMore: fetchMoreSpy,
+    });
+
+    const view = render(<ClipboardList />);
+    const row = view.container.querySelector(".overflow-x-auto") as HTMLDivElement | null;
+
+    expect(row).not.toBeNull();
+
+    Object.defineProperty(row!, "clientWidth", {
+      configurable: true,
+      value: 320,
+    });
+    Object.defineProperty(row!, "scrollWidth", {
+      configurable: true,
+      value: 960,
+    });
+    Object.defineProperty(row!, "scrollLeft", {
+      configurable: true,
+      writable: true,
+      value: 640,
+    });
+
+    fireEvent.scroll(row!);
+
+    expect(fetchMoreSpy).toHaveBeenCalledTimes(1);
   });
 });

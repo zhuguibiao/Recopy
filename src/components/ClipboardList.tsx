@@ -35,15 +35,20 @@ interface GroupRowProps {
   setSelectedIndex: (index: number) => void;
   quickIndexByFlatIndex: Map<number, number>;
   onRowWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
 const CARD_WIDTH = 300;
 const CARD_GAP = 12;
 const CARD_HEIGHT = 260;
 const HORIZONTAL_ESTIMATE = CARD_WIDTH + CARD_GAP; // 312
+const HORIZONTAL_FETCH_THRESHOLD = 24;
 
 const GroupRow = forwardRef<GroupRowHandle, GroupRowProps>(
-  ({ items, selectedIndex, setSelectedIndex, quickIndexByFlatIndex, onRowWheel }, ref) => {
+  (
+    { items, selectedIndex, setSelectedIndex, quickIndexByFlatIndex, onRowWheel, onScroll },
+    ref,
+  ) => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const virtualizer = useVirtualizer({
@@ -59,7 +64,12 @@ const GroupRow = forwardRef<GroupRowHandle, GroupRowProps>(
     }));
 
     return (
-      <div ref={scrollRef} className="overflow-x-auto no-scrollbar pb-1 px-5" onWheel={onRowWheel}>
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto no-scrollbar pb-1 px-5"
+        onWheel={onRowWheel}
+        onScroll={onScroll}
+      >
         <div
           className="relative"
           style={{
@@ -210,13 +220,27 @@ export function ClipboardList() {
     e.preventDefault();
     el.scrollLeft += e.deltaY;
   }, []);
+  const onFlatRowScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      if (isVertical || shouldGroup || !hasMore || isFetchingMore) return;
+
+      const el = e.currentTarget;
+      if (el.scrollWidth <= el.clientWidth) return;
+
+      const remaining = el.scrollWidth - (el.scrollLeft + el.clientWidth);
+      if (remaining <= HORIZONTAL_FETCH_THRESHOLD) {
+        fetchMore();
+      }
+    },
+    [fetchMore, hasMore, isFetchingMore, isVertical, shouldGroup],
+  );
 
   // Auto-scroll selected card into view (T/B grouped mode; L/R uses virtualizer).
   // useLayoutEffect runs before browser paint, preventing visible jump when the
   // panel opens with a non-Today selection (e.g. This Week / This Month).
   useLayoutEffect(() => {
     if (!shouldGroup || selectedIndex < 0 || !selectedItemId) return;
-    const autoScrollKey = `${panelShowVersion}:${selectedItemId}`;
+    const autoScrollKey = `${panelShowVersion}:${selectedItemId}:${selectedIndex}`;
     if (lastGroupedAutoScrollKeyRef.current === autoScrollKey) return;
     lastGroupedAutoScrollKeyRef.current = autoScrollKey;
 
@@ -326,12 +350,10 @@ export function ClipboardList() {
           setSelectedIndex={setSelectedIndex}
           quickIndexByFlatIndex={quickIndexByFlatIndex}
           onRowWheel={onRowWheel}
+          onScroll={onFlatRowScroll}
         />
         {hasMore && (
-          <div
-            ref={sentinelRef}
-            className="absolute bottom-0 inset-x-0 flex justify-center py-2 pointer-events-none"
-          >
+          <div className="absolute bottom-0 inset-x-0 flex justify-center py-2 pointer-events-none">
             {isFetchingMore && <Loader2 className="animate-spin text-muted-foreground" size={20} />}
           </div>
         )}

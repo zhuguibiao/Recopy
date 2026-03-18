@@ -38,6 +38,7 @@ describe("useClipboardStore", () => {
       filterType: "all",
       viewMode: "history",
       selectedIndex: 0,
+      panelShowVersion: 0,
       hasMore: true,
       isFetchingMore: false,
     });
@@ -121,6 +122,7 @@ describe("useClipboardStore", () => {
   });
 
   it("should change view mode", () => {
+    mockedInvoke.mockResolvedValueOnce([]);
     useClipboardStore.getState().setViewMode("pins");
     expect(useClipboardStore.getState().viewMode).toBe("pins");
     expect(useClipboardStore.getState().selectedIndex).toBe(0);
@@ -141,6 +143,29 @@ describe("useClipboardStore", () => {
       limit: 500,
       offset: 0,
     });
+  });
+
+  it("should preserve selected item identity on panel show when newer items prepend", async () => {
+    const oldItems = [
+      mockItem({ id: "old-a", plain_text: "old-a" }),
+      mockItem({ id: "old-b", plain_text: "old-b" }),
+      mockItem({ id: "old-c", plain_text: "old-c" }),
+    ];
+    const refreshedItems = [mockItem({ id: "new-top", plain_text: "new-top" }), ...oldItems];
+    mockedInvoke.mockResolvedValueOnce(refreshedItems);
+    useClipboardStore.setState({
+      items: oldItems,
+      selectedIndex: 1,
+      viewMode: "history",
+      searchQuery: "",
+    });
+
+    await useClipboardStore.getState().onPanelShow();
+
+    expect(useClipboardStore.getState().selectedIndex).toBe(2);
+    expect(useClipboardStore.getState().items[useClipboardStore.getState().selectedIndex]?.id).toBe(
+      "old-b",
+    );
   });
 
   it("should ignore stale results from older requests", async () => {
@@ -545,6 +570,50 @@ describe("useClipboardStore", () => {
         limit: 500,
         offset: 0,
       });
+    });
+
+    it("should preserve selected item identity when refreshed items prepend newer entries", async () => {
+      const oldItems = [
+        mockItem({ id: "old-a", plain_text: "old-a" }),
+        mockItem({ id: "old-b", plain_text: "old-b" }),
+        mockItem({ id: "old-c", plain_text: "old-c" }),
+      ];
+      const refreshedItems = [mockItem({ id: "new-top", plain_text: "new-top" }), ...oldItems];
+      mockedInvoke.mockResolvedValueOnce(refreshedItems);
+      useClipboardStore.setState({
+        items: oldItems,
+        selectedIndex: 1,
+        viewMode: "history",
+        searchQuery: "",
+      });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(useClipboardStore.getState().selectedIndex).toBe(2);
+      expect(
+        useClipboardStore.getState().items[useClipboardStore.getState().selectedIndex]?.id,
+      ).toBe("old-b");
+    });
+
+    it("should clamp selected index when the previously selected item disappears", async () => {
+      const oldItems = [
+        mockItem({ id: "old-a", plain_text: "old-a" }),
+        mockItem({ id: "old-b", plain_text: "old-b" }),
+        mockItem({ id: "old-c", plain_text: "old-c" }),
+      ];
+      const refreshedItems = [mockItem({ id: "new-top", plain_text: "new-top" })];
+      mockedInvoke.mockResolvedValueOnce(refreshedItems);
+      useClipboardStore.setState({
+        items: oldItems,
+        selectedIndex: 2,
+        viewMode: "history",
+        searchQuery: "",
+      });
+
+      await useClipboardStore.getState().refreshOnChange();
+
+      expect(useClipboardStore.getState().selectedIndex).toBe(0);
+      expect(useClipboardStore.getState().items[0]?.id).toBe("new-top");
     });
   });
 });
